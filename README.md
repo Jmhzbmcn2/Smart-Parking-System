@@ -8,7 +8,9 @@ Install Python 3.13, uv, Node.js 22 (with npm) and Git. From the repository root
 
 ```text
 uv sync --directory backend
-npm --prefix frontend install
+cd frontend
+npm install
+cd ..
 ```
 
 Start the backend and frontend in separate terminals:
