@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+node_modules/
+dist/
+*.db
+~$*
+.env
+.idea/
+.superpowers/
+
+# Root workbook originals remain available while Excel is open.
+/SPMS_requirements.xlsx
+/true (2).xlsx

@@ -1,0 +1,483 @@
+<title>SPMS Smart Parking</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Be+Vietnam+Pro:wght@400;500;600&display=swap">
+<style>
+/* Layout: sign-style header bar with role tabs; each tab is a 2-column work area (main + side panel) that stacks on phones */
+:root {
+  --bg: #eef1f5; --surface: #ffffff; --ink: #15202e; --muted: #5b6778; --line: #d6dce5;
+  --accent: #1d5bbf; --accent-ink: #ffffff; --accent-soft: #e3ecfa;
+  --free: #1f8a52; --free-soft: #e2f3ea; --occ: #b93a32; --occ-soft: #f7e3e1;
+  --res: #b7791f; --res-soft: #fbf0dc; --plate: #fdfdfb; --plate-ink: #111;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0e131a; --surface: #161f2a; --ink: #e5eaf1; --muted: #93a0b2; --line: #283445;
+  --accent: #5b95f0; --accent-ink: #0b1220; --accent-soft: #1b2a42;
+  --free: #4cc184; --free-soft: #15301f; --occ: #e8716a; --occ-soft: #3a1c1b;
+  --res: #e6a94a; --res-soft: #382b14; --plate: #f2f2ee; --plate-ink: #111; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0e131a; --surface: #161f2a; --ink: #e5eaf1; --muted: #93a0b2; --line: #283445;
+  --accent: #5b95f0; --accent-ink: #0b1220; --accent-soft: #1b2a42;
+  --free: #4cc184; --free-soft: #15301f; --occ: #e8716a; --occ-soft: #3a1c1b;
+  --res: #e6a94a; --res-soft: #382b14; --plate: #f2f2ee; --plate-ink: #111; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 14px; line-height: 1.5 }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)) }
+header { background: var(--surface); border-bottom: 1px solid var(--line); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5 }
+.bar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; padding-block: 10px }
+.brand { display: flex; align-items: center; gap: 10px; font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: .02em }
+.psign { width: 34px; height: 34px; border-radius: 6px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 26px; line-height: 1 }
+.brand small { font-family: var(--body); font-weight: 400; font-size: 12px; color: var(--muted); letter-spacing: 0 }
+nav { display: flex; gap: 4px; flex-wrap: wrap }
+nav button { font: 600 14px var(--body); border: 0; background: none; color: var(--muted); padding: 8px 12px; border-radius: 6px; cursor: pointer }
+nav button[aria-selected="true"] { background: var(--accent-soft); color: var(--accent) }
+.tools { margin-left: auto; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted) }
+.clock { font: 600 18px var(--display); color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: .03em }
+
+select, input { font: 14px var(--body); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px; min-width: 0 }
+input:focus-visible, select:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.btn { font: 600 14px var(--body); border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 6px; padding: 8px 14px; cursor: pointer }
+.btn:hover { border-color: var(--muted) }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink) }
+.btn.danger { color: var(--occ); border-color: var(--occ) }
+.btn.small { padding: 5px 10px; font-size: 13px }
+.btn:disabled { opacity: .45; cursor: not-allowed }
+
+main { padding-block: 20px 48px }
+.grid2 { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start }
+@media (max-width: 860px) { .grid2 { grid-template-columns: minmax(0, 1fr) } }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 16px; min-width: 0 }
+.stack { display: grid; gap: 16px }
+h2 { font: 700 24px var(--display); letter-spacing: .02em; margin: 0; text-wrap: balance }
+h3 { font: 600 13px var(--body); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 10px }
+.muted { color: var(--muted) }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center }
+.req { font: 500 11px var(--body); color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; white-space: nowrap }
+
+/* slot map */
+.floorhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden }
+.seg button { font: 600 14px var(--body); border: 0; background: var(--surface); color: var(--muted); padding: 7px 14px; cursor: pointer }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink) }
+.zones { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px }
+.zone-title { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px }
+.zone-title b { font: 700 20px var(--display); letter-spacing: .03em }
+.slots { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px }
+.slot { aspect-ratio: 1 / 1.35; max-width: 100%; border-radius: 4px; border: 1px solid transparent; font: 600 12px var(--display); display: grid; place-items: center; cursor: pointer; padding: 0; font-variant-numeric: tabular-nums }
+.slot.free { background: var(--free-soft); color: var(--free); border-color: var(--free) }
+.slot.occ { background: var(--occ-soft); color: var(--occ); cursor: default }
+.slot.res { background: var(--res-soft); color: var(--res); border-color: var(--res); border-style: dashed }
+.slot.sel { outline: 2px solid var(--ink); outline-offset: 1px }
+.entry { font: 600 12px var(--body); color: var(--accent); margin-bottom: 6px }
+.legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--muted) }
+.legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-right: 5px }
+.counts { display: flex; gap: 8px; flex-wrap: wrap }
+.chip { font: 600 13px var(--body); padding: 3px 10px; border-radius: 999px; font-variant-numeric: tabular-nums }
+.chip.free { background: var(--free-soft); color: var(--free) }
+.chip.occ { background: var(--occ-soft); color: var(--occ) }
+.chip.res { background: var(--res-soft); color: var(--res) }
+
+/* Vietnamese plate */
+.plate { display: inline-block; font: 700 17px var(--display); letter-spacing: .06em; background: var(--plate); color: var(--plate-ink); border: 2px solid var(--plate-ink); border-radius: 4px; padding: 0 8px; line-height: 1.5; white-space: nowrap }
+
+/* gate */
+.gates { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; align-items: start }
+.barrier { position: relative; height: 70px; border-bottom: 3px solid var(--line); margin: 6px 0 14px }
+.barrier .post { position: absolute; left: 10px; bottom: 0; width: 18px; height: 46px; background: var(--muted); border-radius: 3px 3px 0 0 }
+.barrier .arm { position: absolute; left: 19px; bottom: 36px; width: 70%; height: 9px; border-radius: 5px; transform-origin: 0 50%;
+  background: repeating-linear-gradient(90deg, var(--occ) 0 18px, var(--plate) 18px 36px); transition: transform .8s ease }
+.barrier.open .arm { transform: rotate(-80deg) }
+.barrier .state { position: absolute; right: 0; top: 0; font: 700 15px var(--display); letter-spacing: .05em }
+.barrier .state.open { color: var(--free) } .barrier .state.closed { color: var(--occ) }
+@media (prefers-reduced-motion: reduce) { .barrier .arm { transition: none } }
+.msg { border-radius: 6px; padding: 8px 12px; font-size: 13px }
+.msg.ok { background: var(--free-soft); color: var(--free) }
+.msg.err { background: var(--occ-soft); color: var(--occ) }
+.msg.warn { background: var(--res-soft); color: var(--res) }
+.list { display: grid; gap: 6px; max-height: 260px; overflow: auto }
+.item { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; background: none; color: var(--ink); font: 13px var(--body); cursor: pointer; text-align: left }
+.item[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-soft) }
+.kv { display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; font-variant-numeric: tabular-nums }
+.kv dt { color: var(--muted) } .kv dd { margin: 0; text-align: right }
+.fee { font: 700 34px var(--display); letter-spacing: .02em; font-variant-numeric: tabular-nums }
+.qr { display: flex; gap: 14px; align-items: center }
+canvas { border-radius: 4px; background: #fff; max-width: 100% }
+
+/* admin */
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px }
+.tile .num { font: 700 32px var(--display); font-variant-numeric: tabular-nums; letter-spacing: .02em }
+.form { display: grid; gap: 10px }
+.form label { display: grid; gap: 4px; font-size: 13px; color: var(--muted) }
+.tablewrap { overflow-x: auto }
+table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums }
+th { text-align: left; font-weight: 600; color: var(--muted); border-bottom: 1px solid var(--line); padding: 6px 8px; white-space: nowrap }
+td { border-bottom: 1px solid var(--line); padding: 7px 8px; vertical-align: middle }
+td.num { text-align: right }
+.forbidden { text-align: center; padding-block: 48px }
+.forbidden .code { font: 700 64px var(--display); color: var(--occ); line-height: 1 }
+
+#toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 10px 16px; border-radius: 8px; font-size: 14px; max-width: calc(100% - 32px); z-index: 10 }
+</style>
+
+<header>
+  <div class="wrap bar">
+    <div class="brand"><span class="psign">P</span><div>SPMS<br><small>Bãi xe Trung tâm · 2 tầng · 200 chỗ</small></div></div>
+    <nav id="tabs" role="tablist">
+      <button role="tab" data-tab="driver" aria-selected="true">Tài xế</button>
+      <button role="tab" data-tab="gate" aria-selected="false">Cổng ra/vào</button>
+      <button role="tab" data-tab="admin" aria-selected="false">Quản trị</button>
+    </nav>
+    <div class="tools">
+      <label for="role">Vai trò</label>
+      <select id="role">
+        <option value="driver">Driver</option>
+        <option value="staff">Parking Attendant</option>
+        <option value="admin" selected>Administrator</option>
+      </select>
+      <span class="clock" id="clock">--:--</span>
+      <button class="btn small" id="ff" title="Tua đồng hồ mô phỏng">+5 phút</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="view"></main>
+<div id="toast" hidden></div>
+
+<script>
+// ---------- model ----------
+const cfg = { firstH: 2, firstPrice: 20000, perHour: 10000 };
+const ROLE_TABS = { driver: ['driver'], staff: ['driver', 'gate'], admin: ['driver', 'gate', 'admin'] };
+let offset = 0;                     // simulated clock offset in ms
+const now = () => Date.now() + offset;
+const MIN = 60000;
+
+// SP-3.1: hours rounded up, first block flat, each extra hour charged
+function calcFee(minutes, p) {
+  const h = Math.max(1, Math.ceil(minutes / 60));
+  return h <= p.firstH ? p.firstPrice : p.firstPrice + (h - p.firstH) * p.perHour;
+}
+console.assert(calcFee(190, cfg) === 40000, 'fee 3h10m');
+console.assert(calcFee(120, cfg) === 20000, 'fee 2h');
+console.assert(calcFee(5, cfg) === 20000, 'fee 5m');
+
+let seed = 7;
+const rnd = () => { seed = (seed * 16807) % 2147483647; return (seed - 1) / 2147483646; };
+const pick = a => a[Math.floor(rnd() * a.length)];
+const pad = (n, w = 2) => String(n).padStart(w, '0');
+function randomPlate() {
+  return `${pick(['29', '30', '51', '43', '36', '15', '88'])}${pick('ABCDEFGHK'.split(''))}-${pad(Math.floor(rnd() * 1000), 3)}.${pad(Math.floor(rnd() * 100))}`;
+}
+const PLATE_RE = /^\d{2}[A-Z][A-Z0-9]?-\d{3}\.?\d{2}$/;
+
+// slots in distance order from the entrance: T1-A, T1-B, T2-A, T2-B (SP-2.3)
+const slots = [];
+for (const floor of [1, 2]) for (const zone of ['A', 'B']) for (let n = 1; n <= 50; n++)
+  slots.push({ id: `T${floor}-${zone}-${pad(n)}`, floor, zone, n, state: 'free', plate: null, resUntil: 0 });
+const slotById = id => slots.find(s => s.id === id);
+
+const sessions = [];   // {id, plate, slot, inAt, outAt, paid, fee, method, price}
+const audit = [];      // {t, who, action, detail}
+let sid = 1;
+const log = (action, detail) => audit.unshift({ t: now(), who: roleName(), action, detail });
+
+// sample data: ~55% occupied, a few reservations, earlier paid sessions today
+(function seedData() {
+  const t0 = Date.now();
+  for (const s of slots) {
+    const r = rnd();
+    if (r < 0.55) {
+      s.state = 'occ'; s.plate = randomPlate();
+      sessions.push({ id: sid++, plate: s.plate, slot: s.id, inAt: t0 - Math.floor(10 + rnd() * 380) * MIN, outAt: null, paid: false, fee: 0, method: null, price: { ...cfg } });
+    } else if (r < 0.58) {
+      s.state = 'res'; s.plate = randomPlate(); s.resUntil = t0 + Math.floor(3 + rnd() * 12) * MIN;
+    }
+  }
+  const midnight = new Date(); midnight.setHours(0, 0, 0, 0);
+  for (let i = 0; i < 36; i++) {
+    const inAt = midnight.getTime() + Math.floor(rnd() * Math.max(60, (t0 - midnight) / MIN - 60)) * MIN;
+    const outAt = Math.min(t0 - MIN, inAt + Math.floor(20 + rnd() * 300) * MIN);
+    if (outAt <= inAt) continue;
+    sessions.push({ id: sid++, plate: randomPlate(), slot: pick(slots).id, inAt, outAt, paid: true,
+      fee: calcFee((outAt - inAt) / MIN, cfg), method: rnd() < 0.8 ? 'QR' : 'Tiền mặt', price: { ...cfg } });
+  }
+})();
+
+// ---------- ui state ----------
+const ui = { tab: 'driver', floor: 1, sel: null, myPlate: '', entryMsg: null, exitSel: null, exitQ: '', exitFail: false, exitMsg: null, gateOpen: { in: false, out: false } };
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const vnd = n => n.toLocaleString('vi-VN') + ' ₫';
+const hhmm = t => { const d = new Date(t); return `${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+const dur = m => `${Math.floor(m / 60)} giờ ${pad(Math.floor(m % 60))} phút`;
+const plate = p => `<span class="plate">${esc(p)}</span>`;
+const role = () => $('#role').value;
+const roleName = () => $('#role').selectedOptions[0].textContent;
+function toast(text) { const t = $('#toast'); t.textContent = text; t.hidden = false; clearTimeout(toast.h); toast.h = setTimeout(() => t.hidden = true, 3200); }
+
+function openGate(which) {
+  ui.gateOpen[which] = true; render();
+  setTimeout(() => { ui.gateOpen[which] = false; if (ui.tab === 'gate') render(); }, 3000);
+}
+
+// ---------- views ----------
+function counts(list) {
+  return { free: list.filter(s => s.state === 'free').length, occ: list.filter(s => s.state === 'occ').length, res: list.filter(s => s.state === 'res').length };
+}
+
+function viewDriver() {
+  const fl = slots.filter(s => s.floor === ui.floor);
+  const zone = z => {
+    const zs = fl.filter(s => s.zone === z), c = counts(zs);
+    return `<div>
+      <div class="zone-title"><b>Khu ${z}</b><span class="muted">${c.free} trống / ${zs.length}</span></div>
+      ${ui.floor === 1 && z === 'A' ? '<div class="entry">▼ Lối vào gần nhất</div>' : '<div class="entry" style="visibility:hidden">.</div>'}
+      <div class="slots">${zs.map(s => `<button class="slot ${s.state}${ui.sel === s.id ? ' sel' : ''}" data-slot="${s.id}" aria-label="${s.id} ${s.state}" ${s.state === 'occ' ? 'tabindex="-1"' : ''}>${pad(s.n)}</button>`).join('')}</div>
+    </div>`;
+  };
+  const all = counts(slots), f1 = counts(slots.filter(s => s.floor === 1)), f2 = counts(slots.filter(s => s.floor === 2));
+  return `<div class="grid2">
+    <section class="card">
+      <div class="floorhead">
+        <div><h2>Chỗ trống theo thời gian thực</h2><span class="req">SP-2.1</span></div>
+        <div class="seg" role="group" aria-label="Chọn tầng">
+          <button data-floor="1" aria-pressed="${ui.floor === 1}">Tầng 1 · ${f1.free}</button>
+          <button data-floor="2" aria-pressed="${ui.floor === 2}">Tầng 2 · ${f2.free}</button>
+        </div>
+      </div>
+      <div class="zones">${zone('A')}${zone('B')}</div>
+      <div class="legend" style="margin-top:14px">
+        <span><i style="background:var(--free-soft);border:1px solid var(--free)"></i>Trống</span>
+        <span><i style="background:var(--res-soft);border:1px dashed var(--res)"></i>Đã đặt (giữ 15 phút)</span>
+        <span><i style="background:var(--occ-soft)"></i>Có xe</span>
+      </div>
+    </section>
+    <aside class="stack">
+      <div class="card">
+        <h3>Toàn bãi</h3>
+        <div class="counts"><span class="chip free">${all.free} trống</span><span class="chip res">${all.res} đã đặt</span><span class="chip occ">${all.occ} có xe</span></div>
+      </div>
+      <div class="card">${reservePanel()}</div>
+      <div class="card">${myReservations()}</div>
+    </aside>
+  </div>`;
+}
+
+function reservePanel() {
+  const s = ui.sel && slotById(ui.sel);
+  if (!s) return `<h3>Đặt chỗ trước <span class="req">SP-2.2.1</span></h3><p class="muted" style="margin:0">Chọn một ô màu xanh trên sơ đồ để giữ chỗ trong 15 phút.</p>`;
+  if (s.state === 'res') return `<h3>Chỗ ${s.id}</h3><p style="margin:0">Đang được giữ cho ${plate(s.plate)}, còn ${left(s)}.</p>`;
+  return `<h3>Đặt chỗ ${s.id} <span class="req">SP-2.2.1</span></h3>
+    <form class="form" id="reserveForm">
+      <label for="myPlate">Biển số xe của bạn<input id="myPlate" placeholder="30A-123.45" value="${esc(ui.myPlate)}" autocomplete="off"></label>
+      <div id="resErr"></div>
+      <button class="btn primary" type="submit">Giữ chỗ 15 phút</button>
+    </form>`;
+}
+const left = s => { const ms = Math.max(0, s.resUntil - now()); return `${pad(Math.floor(ms / MIN))}:${pad(Math.floor(ms % MIN / 1000))}`; };
+
+function myReservations() {
+  const list = slots.filter(s => s.state === 'res').sort((a, b) => a.resUntil - b.resUntil);
+  return `<h3>Đặt chỗ đang giữ <span class="req">SP-2.2.2</span></h3>
+    <div class="list">${list.map(s => `<div class="item" style="cursor:default"><span>${plate(s.plate)} <span class="muted">${s.id}</span></span><b style="font-variant-numeric:tabular-nums;color:var(--res)">${left(s)}</b></div>`).join('') || '<p class="muted" style="margin:0">Không có đặt chỗ nào.</p>'}</div>
+    <p class="muted" style="margin:10px 0 0;font-size:12px">Quá 15 phút xe chưa vào, chỗ tự trả lại trạng thái trống.</p>`;
+}
+
+function viewGate() {
+  const active = sessions.filter(x => !x.outAt);
+  const q = ui.exitQ.trim().toUpperCase();
+  const matches = active.filter(x => !q || x.plate.includes(q)).sort((a, b) => a.inAt - b.inAt).slice(0, 30);
+  const sel = sessions.find(x => x.id === ui.exitSel && !x.outAt);
+  const barrier = w => `<div class="barrier${ui.gateOpen[w] ? ' open' : ''}"><div class="post"></div><div class="arm"></div><span class="state ${ui.gateOpen[w] ? 'open' : 'closed'}">${ui.gateOpen[w] ? 'BARRIER MỞ' : 'BARRIER ĐÓNG'}</span></div>`;
+  let exitDetail = '<p class="muted" style="margin:0">Chọn xe trong danh sách hoặc gõ biển số camera đọc được ở cổng ra.</p>';
+  if (sel) {
+    const mins = (now() - sel.inAt) / MIN, fee = calcFee(mins, sel.price);
+    exitDetail = `<div class="stack" style="gap:12px">
+      <div class="row" style="justify-content:space-between">${plate(sel.plate)}<span class="muted">${sel.slot}</span></div>
+      <dl class="kv" style="margin:0"><dt>Giờ vào</dt><dd>${hhmm(sel.inAt)}</dd><dt>Thời gian đỗ</dt><dd>${dur(mins)}</dd>
+        <dt>Bảng giá</dt><dd>${vnd(sel.price.firstPrice)} / ${sel.price.firstH} giờ đầu, +${vnd(sel.price.perHour)}/giờ</dd></dl>
+      <div class="qr"><canvas id="qr" width="96" height="96" aria-label="Mã QR thanh toán"></canvas>
+        <div><div class="muted" style="font-size:12px">Phí phải trả <span class="req">SP-3.1</span></div><div class="fee">${vnd(fee)}</div><div class="muted" style="font-size:12px">Quét QR để thanh toán <span class="req">SP-3.2</span></div></div></div>
+      ${ui.exitFail ? `<div class="msg err">Thanh toán thất bại. Barrier giữ đóng.</div>
+        <form class="form" id="manualForm">
+          <label for="reason">Lý do mở thủ công <span class="req">SP-4.4</span><select id="reason"><option>Khách trả tiền mặt</option><option>Cổng thanh toán lỗi</option><option>Khác</option></select></label>
+          <button class="btn danger" type="submit">Thu tiền mặt và mở barrier</button>
+        </form>` : `<div class="row"><button class="btn primary" id="payOk">Mô phỏng: thanh toán thành công</button><button class="btn" id="payFail">Mô phỏng: thất bại</button></div>`}
+    </div>`;
+  }
+  return `<div class="gates">
+    <section class="card">
+      <div class="row" style="justify-content:space-between"><h2>Cổng vào</h2><span class="req">UC-01</span></div>
+      ${barrier('in')}
+      <form class="form" id="entryForm">
+        <label for="plateIn">Biển số <span class="muted">(camera LPR đọc, hoặc nhân viên nhập tay)</span><input id="plateIn" placeholder="51K-888.88" autocomplete="off"></label>
+        <div class="row"><button class="btn" type="button" id="lpr">Camera đọc biển số</button><button class="btn primary" type="submit">Cho xe vào</button></div>
+      </form>
+      ${ui.entryMsg ? `<div class="msg ${ui.entryMsg.kind}" style="margin-top:12px">${ui.entryMsg.html}</div>` : ''}
+    </section>
+    <section class="card">
+      <div class="row" style="justify-content:space-between"><h2>Cổng ra</h2><span class="req">UC-03</span></div>
+      ${barrier('out')}
+      <div class="stack" style="gap:12px">
+        <input id="plateOut" placeholder="Tìm biển số, ví dụ 30A" value="${esc(ui.exitQ)}" autocomplete="off" aria-label="Tìm biển số xe ra">
+        <div class="list">${matches.map(x => `<button class="item" data-exit="${x.id}" aria-pressed="${x.id === ui.exitSel}">${plate(x.plate)}<span class="muted">vào ${hhmm(x.inAt)} · ${x.slot}</span></button>`).join('') || '<p class="muted" style="margin:0">Không có xe nào khớp.</p>'}</div>
+        ${ui.exitMsg ? `<div class="msg ${ui.exitMsg.kind}">${ui.exitMsg.html}</div>` : ''}
+        ${exitDetail}
+      </div>
+    </section>
+  </div>`;
+}
+
+function viewAdmin() {
+  const day0 = new Date(now()); day0.setHours(0, 0, 0, 0);
+  const paid = sessions.filter(x => x.paid && x.outAt >= day0.getTime()).sort((a, b) => b.outAt - a.outAt);
+  const total = paid.reduce((a, x) => a + x.fee, 0), c = counts(slots);
+  return `<div class="stack">
+    <div class="tiles">
+      <div class="card tile"><h3>Doanh thu hôm nay <span class="req">SP-4.2</span></h3><div class="num">${vnd(total)}</div><div class="muted">${paid.length} lượt đã thanh toán</div></div>
+      <div class="card tile"><h3>Tỉ lệ lấp đầy</h3><div class="num">${Math.round(c.occ / slots.length * 100)}%</div><div class="muted">${c.occ} / ${slots.length} chỗ có xe</div></div>
+      <div class="card tile"><h3>Đang đỗ</h3><div class="num">${sessions.filter(x => !x.outAt).length}</div><div class="muted">${c.res} chỗ đang được giữ</div></div>
+    </div>
+    <div class="grid2">
+      <section class="card">
+        <h3>Lượt thanh toán hôm nay</h3>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Giờ ra</th><th>Biển số</th><th>Thời gian</th><th>Hình thức</th><th style="text-align:right">Phí</th></tr></thead>
+          <tbody>${paid.slice(0, 12).map(x => `<tr><td>${hhmm(x.outAt)}</td><td>${plate(x.plate)}</td><td>${dur((x.outAt - x.inAt) / MIN)}</td><td>${x.method}</td><td class="num">${vnd(x.fee)}</td></tr>`).join('')}</tbody>
+        </table></div>
+        <p class="muted" style="margin:10px 0 0;font-size:12px">Hiển thị 12 lượt gần nhất. Tổng ở ô trên bằng tổng tất cả lượt đã thanh toán trong ngày.</p>
+      </section>
+      <aside class="stack">
+        <section class="card">
+          <h3>Bảng giá <span class="req">SP-4.1</span></h3>
+          <form class="form" id="priceForm">
+            <label for="firstH">Số giờ đầu<input id="firstH" type="number" min="1" max="24" value="${cfg.firstH}"></label>
+            <label for="firstPrice">Giá các giờ đầu (₫)<input id="firstPrice" type="number" min="0" step="1000" value="${cfg.firstPrice}"></label>
+            <label for="perHour">Mỗi giờ tiếp theo (₫)<input id="perHour" type="number" min="0" step="1000" value="${cfg.perHour}"></label>
+            <button class="btn primary" type="submit">Lưu bảng giá</button>
+            <p class="muted" style="margin:0;font-size:12px">Giá mới chỉ áp dụng cho xe vào sau thời điểm lưu.</p>
+          </form>
+        </section>
+      </aside>
+    </div>
+    <section class="card">
+      <h3>Audit log <span class="req">SP-4.4</span></h3>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Thời điểm</th><th>Người thực hiện</th><th>Thao tác</th><th>Chi tiết</th></tr></thead>
+        <tbody>${audit.map(a => `<tr><td>${hhmm(a.t)}</td><td>${esc(a.who)}</td><td>${esc(a.action)}</td><td>${a.detail}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">Chưa có thao tác nào. Thử mở barrier thủ công ở tab Cổng ra/vào.</td></tr>'}</tbody>
+      </table></div>
+    </section>
+  </div>`;
+}
+
+function viewForbidden() {
+  return `<section class="card forbidden"><div class="code">403</div><h2 style="margin-top:8px">Vai trò ${esc(roleName())} không được vào trang này</h2>
+    <p class="muted">Đổi vai trò ở góc trên bên phải để xem. <span class="req">SP-4.3</span></p></section>`;
+}
+
+function drawQR(seedNum) {
+  const c = $('#qr'); if (!c) return;
+  const g = c.getContext('2d'), N = 21, k = c.width / N;
+  let s = seedNum * 9301 + 49297;
+  const r = () => (s = (s * 9301 + 49297) % 233280) / 233280;
+  g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.fillStyle = '#111';
+  const finder = (x, y) => { g.fillRect(x * k, y * k, 7 * k, 7 * k); g.fillStyle = '#fff'; g.fillRect((x + 1) * k, (y + 1) * k, 5 * k, 5 * k); g.fillStyle = '#111'; g.fillRect((x + 2) * k, (y + 2) * k, 3 * k, 3 * k); };
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const inFinder = (x < 8 && y < 8) || (x > 12 && y < 8) || (x < 8 && y > 12);
+    if (!inFinder && r() < 0.5) g.fillRect(x * k, y * k, k, k);
+  }
+  finder(0, 0); finder(14, 0); finder(0, 14);
+}
+
+function render() {
+  const allowed = ROLE_TABS[role()];
+  document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === ui.tab));
+  const focusId = document.activeElement && document.activeElement.id, caret = document.activeElement && document.activeElement.selectionStart;
+  $('#view').innerHTML = !allowed.includes(ui.tab) ? viewForbidden() : ui.tab === 'driver' ? viewDriver() : ui.tab === 'gate' ? viewGate() : viewAdmin();
+  if (focusId && document.getElementById(focusId)) { const el = document.getElementById(focusId); el.focus(); try { el.setSelectionRange(caret, caret); } catch (e) {} }
+  if (ui.exitSel) drawQR(ui.exitSel);
+  $('#clock').textContent = hhmm(now());
+}
+
+// ---------- actions ----------
+function enterVehicle(p, fromCamera) {
+  p = p.trim().toUpperCase();
+  if (!PLATE_RE.test(p)) return ui.entryMsg = { kind: 'err', html: 'Biển số không đúng định dạng. Ví dụ đúng: 30A-123.45' };
+  if (sessions.some(x => x.plate === p && !x.outAt)) return ui.entryMsg = { kind: 'err', html: `${plate(p)} đang có phiên đỗ trong bãi. Kiểm tra lại camera.` };
+  let s = slots.find(x => x.state === 'res' && x.plate === p), note = 'theo đặt chỗ trước';
+  if (!s) { s = slots.find(x => x.state === 'free'); note = 'gần lối vào nhất <span class="req">SP-2.3</span>'; }
+  if (!s) return ui.entryMsg = { kind: 'warn', html: 'Bãi đã hết chỗ. Barrier giữ đóng.' };
+  s.state = 'occ'; s.plate = p; s.resUntil = 0;
+  sessions.push({ id: sid++, plate: p, slot: s.id, inAt: now(), outAt: null, paid: false, fee: 0, method: null, price: { ...cfg } });
+  if (!fromCamera) log('Nhập tay biển số', `${plate(p)} vào ${s.id}`);
+  ui.entryMsg = { kind: 'ok', html: `Đã tạo phiên đỗ cho ${plate(p)} lúc ${hhmm(now())}. Mời vào chỗ <b>${s.id}</b>, ${note}.` };
+  openGate('in');
+}
+
+function closeSession(x, method) {
+  const mins = (now() - x.inAt) / MIN;
+  x.outAt = now(); x.fee = calcFee(mins, x.price); x.paid = true; x.method = method;
+  const s = slotById(x.slot); if (s && s.plate === x.plate) { s.state = 'free'; s.plate = null; }
+  ui.exitMsg = { kind: 'ok', html: `${plate(x.plate)} đã thanh toán ${vnd(x.fee)} (${method}). Phiên đỗ đóng lúc ${hhmm(x.outAt)}.` };
+  ui.exitSel = null; ui.exitFail = false;
+  openGate('out');
+}
+
+let lastCamera = null;
+document.addEventListener('click', e => {
+  const t = e.target.closest('button'); if (!t) return;
+  if (t.dataset.tab) { ui.tab = t.dataset.tab; return render(); }
+  if (t.dataset.floor) { ui.floor = +t.dataset.floor; ui.sel = null; return render(); }
+  if (t.dataset.slot) { const s = slotById(t.dataset.slot); if (s.state !== 'occ') { ui.sel = s.id; render(); } return; }
+  if (t.dataset.exit) { ui.exitSel = +t.dataset.exit; ui.exitFail = false; ui.exitMsg = null; return render(); }
+  if (t.id === 'lpr') { lastCamera = randomPlate(); $('#plateIn').value = lastCamera; return; }
+  if (t.id === 'payOk') { closeSession(sessions.find(x => x.id === ui.exitSel), 'QR'); return; }
+  if (t.id === 'payFail') { ui.exitFail = true; return render(); }
+  if (t.id === 'ff') { offset += 5 * MIN; tick(); toast('Đồng hồ mô phỏng đã tua thêm 5 phút.'); }
+});
+
+document.addEventListener('submit', e => {
+  e.preventDefault();
+  const f = e.target;
+  if (f.id === 'reserveForm') {
+    const p = $('#myPlate').value.trim().toUpperCase(), s = slotById(ui.sel);
+    if (!PLATE_RE.test(p)) { $('#resErr').innerHTML = '<div class="msg err">Biển số không đúng định dạng. Ví dụ đúng: 30A-123.45</div>'; return; }
+    if (slots.some(x => x.state === 'res' && x.plate === p)) { $('#resErr').innerHTML = '<div class="msg err">Biển số này đã giữ một chỗ khác.</div>'; return; }
+    s.state = 'res'; s.plate = p; s.resUntil = now() + 15 * MIN; ui.myPlate = p;
+    toast(`Đã giữ ${s.id} cho ${p} đến ${hhmm(s.resUntil)}.`);
+    return render();
+  }
+  if (f.id === 'entryForm') { const v = $('#plateIn').value; enterVehicle(v, v.trim().toUpperCase() === lastCamera); return render(); }
+  if (f.id === 'manualForm') {
+    const x = sessions.find(y => y.id === ui.exitSel);
+    log('Mở barrier thủ công', `${plate(x.plate)} · ${esc($('#reason').value)}`);
+    closeSession(x, 'Tiền mặt'); return;
+  }
+  if (f.id === 'priceForm') {
+    const v = id => Math.max(0, Math.round(+$('#' + id).value || 0));
+    const next = { firstH: Math.max(1, v('firstH')), firstPrice: v('firstPrice'), perHour: v('perHour') };
+    log('Đổi bảng giá', `${vnd(cfg.firstPrice)}/${cfg.firstH}h +${vnd(cfg.perHour)} → ${vnd(next.firstPrice)}/${next.firstH}h +${vnd(next.perHour)}`);
+    Object.assign(cfg, next); toast('Đã lưu bảng giá. Áp dụng cho xe vào từ bây giờ.');
+    return render();
+  }
+});
+
+document.addEventListener('input', e => {
+  if (e.target.id === 'plateOut') { ui.exitQ = e.target.value; render(); }
+  if (e.target.id === 'myPlate') ui.myPlate = e.target.value;
+});
+$('#role').addEventListener('change', render);
+
+// expire reservations (SP-2.2.2) and refresh countdowns
+function tick() {
+  for (const s of slots) if (s.state === 'res' && s.resUntil <= now()) {
+    toast(`Đặt chỗ ${s.id} của ${s.plate} đã tự hủy vì quá 15 phút.`);
+    s.state = 'free'; s.plate = null; s.resUntil = 0;
+  }
+  const typing = document.activeElement && ['INPUT', 'SELECT'].includes(document.activeElement.tagName);
+  if (!typing) render(); else $('#clock').textContent = hhmm(now());
+}
+setInterval(tick, 1000);
+render();
+</script>
