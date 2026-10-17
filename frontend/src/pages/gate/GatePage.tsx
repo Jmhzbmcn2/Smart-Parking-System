@@ -48,7 +48,7 @@ export default function GatePage() {
   }, [])
 
   const newest = events?.[0]
-  const paymentId = pendingPaymentId(newest)
+  const paymentId = pendingPaymentId(events)
   const { data: payment } = usePolling<Payment>(
     paymentId === null ? null : `/payments/${paymentId}`,
     2000,
@@ -126,7 +126,7 @@ export default function GatePage() {
         </p>
       )}
 
-      {payment && payment.id === paymentId && (
+      {payment && payment.id === paymentId && payment.status !== 'paid' && (
         <Card>
           <CardHeader>
             <CardTitle>

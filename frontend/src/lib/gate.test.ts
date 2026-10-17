@@ -73,14 +73,23 @@ describe('pendingPaymentId', () => {
   const event = (action: GateEvent['action'], payment_id: number | null) =>
     ({ action, payment_id }) as GateEvent
 
-  it('returns the payment of a payment_required or payment_failed event', () => {
-    expect(pendingPaymentId(event('payment_required', 7))).toBe(7)
-    expect(pendingPaymentId(event('payment_failed', 7))).toBe(7)
+  it('returns the payment of the newest payment_required or payment_failed event', () => {
+    expect(pendingPaymentId([event('payment_required', 7)])).toBe(7)
+    expect(pendingPaymentId([event('payment_failed', 7), event('payment_required', 7)])).toBe(7)
   })
 
-  it('returns null once the exit completed or for other events', () => {
-    expect(pendingPaymentId(event('exited', 7))).toBeNull()
-    expect(pendingPaymentId(event('entered', null))).toBeNull()
-    expect(pendingPaymentId(undefined)).toBeNull()
+  it('still finds it when newer, unrelated events arrive meanwhile', () => {
+    const events = [event('entered', null), event('manual_required', null), event('payment_required', 7)]
+    expect(pendingPaymentId(events)).toBe(7)
+  })
+
+  it('prefers the newest payment when several are waiting', () => {
+    expect(pendingPaymentId([event('payment_required', 9), event('payment_required', 7)])).toBe(9)
+  })
+
+  it('returns null without payment events or without events', () => {
+    expect(pendingPaymentId([event('entered', null), event('exited', 7)])).toBeNull()
+    expect(pendingPaymentId([])).toBeNull()
+    expect(pendingPaymentId(null)).toBeNull()
   })
 })

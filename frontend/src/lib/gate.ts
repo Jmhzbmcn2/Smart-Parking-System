@@ -24,10 +24,13 @@ export type Payment = {
   qr_payload: string
 }
 
-/** The id of the payment the newest event is waiting on, if any. */
-export function pendingPaymentId(event: GateEvent | undefined): number | null {
-  const waiting = event?.action === 'payment_required' || event?.action === 'payment_failed'
-  return waiting ? (event.payment_id ?? null) : null
+/**
+ * The payment of the newest payment_required / payment_failed event (events are newest first).
+ * Other gate events must not hide it; the caller hides it once the payment status is "paid".
+ */
+export function pendingPaymentId(events: GateEvent[] | null | undefined): number | null {
+  const event = events?.find((e) => e.action === 'payment_required' || e.action === 'payment_failed')
+  return event?.payment_id ?? null
 }
 
 export function normalizePlate(plate: string): string {
