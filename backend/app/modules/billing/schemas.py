@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Annotated
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class PriceIn(BaseModel):
@@ -30,4 +30,14 @@ class PaymentOut(BaseModel):
     amount: int
     status: str
     method: str | None
+    paid_at: datetime | None
     qr_payload: str
+
+
+class InvoiceRequest(BaseModel):
+    email: EmailStr
+
+
+class InvoiceResult(BaseModel):
+    sent_at: datetime
+    path: str | None  # outbox file name; null when sent through SMTP

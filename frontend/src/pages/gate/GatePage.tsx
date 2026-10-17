@@ -39,6 +39,49 @@ function errorText(e: unknown): string {
   return e instanceof ApiError ? e.message : 'Request failed'
 }
 
+/** SP-3.3: after a paid exit the driver can ask for the invoice by email. */
+function InvoiceCard({ paymentId }: { paymentId: number }) {
+  const [email, setEmail] = useState('')
+  const [message, setMessage] = useState<string | null>(null)
+
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    try {
+      await api(`/payments/${paymentId}/invoice`, {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+      })
+      setMessage('Đã gửi hóa đơn')
+    } catch (e) {
+      setMessage(errorText(e))
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Hóa đơn điện tử</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={submit} className="flex flex-wrap items-end gap-3">
+          <div className="space-y-2">
+            <Label htmlFor="invoice-email">Email</Label>
+            <Input
+              id="invoice-email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <Button type="submit">Gửi hóa đơn</Button>
+          {message && <p className="text-sm text-muted-foreground">{message}</p>}
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function GatePage() {
   const { data: events, refresh } = usePolling<GateEvent[]>('/gate-events?limit=20', 2000)
   const [now, setNow] = useState(() => Date.now())
@@ -159,6 +202,10 @@ export default function GatePage() {
             {payMessage && <p className="text-sm text-destructive">{payMessage}</p>}
           </CardContent>
         </Card>
+      )}
+
+      {newest?.action === 'exited' && newest.payment_id !== null && (
+        <InvoiceCard key={newest.payment_id} paymentId={newest.payment_id} />
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
