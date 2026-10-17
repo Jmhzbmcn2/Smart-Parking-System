@@ -118,6 +118,11 @@ export default function GatePage() {
         <Badge variant={barrierOpen(newest, now) ? 'default' : 'outline'}>
           Barrier: {barrierOpen(newest, now) ? 'Mở' : 'Đóng'}
         </Badge>
+        {newest?.action === 'entered' && (
+          <Badge variant="secondary">
+            Gợi ý: {newest.suggested_slot ?? 'hết chỗ'}
+          </Badge>
+        )}
       </div>
 
       {needsManual && (

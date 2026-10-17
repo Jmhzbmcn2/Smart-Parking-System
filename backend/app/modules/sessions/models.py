@@ -35,4 +35,5 @@ class GateEvent(Base):
     ]  # "entered" | "exited" | "manual_required" | "payment_required" | "payment_failed"
     session_id: Mapped[int | None] = mapped_column(ForeignKey("parking_sessions.id"), default=None)
     barrier_opened_at: Mapped[datetime | None] = mapped_column(AwareDateTime, default=None)
+    suggested_slot: Mapped[str | None] = mapped_column(default=None)  # set on "entered"
     payment_id: Mapped[int | None] = mapped_column(ForeignKey("payments.id"), default=None)

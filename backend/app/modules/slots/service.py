@@ -40,6 +40,14 @@ def list_slots(db: Session, floor: int | None, zone: str | None, status: str | N
     return list(db.scalars(query))
 
 
+def suggest(db: Session) -> str | None:
+    """SP-2.3: the free slot nearest the entrance, the lowest (floor, zone, number)."""
+    free = db.scalars(select(Slot).where(Slot.status == "available")).all()
+    # ponytail: min over at most a few hundred slots; add an ORDER BY index at thousands (NFR-06).
+    nearest = min(free, key=lambda s: (s.floor, s.zone, int(s.id[-2:])), default=None)
+    return nearest.id if nearest else None
+
+
 def summary(db: Session) -> list[dict[str, int | str]]:
     rows = db.execute(
         select(

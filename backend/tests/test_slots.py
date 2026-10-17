@@ -69,3 +69,59 @@ def test_sensor_repeat_event_no_double_count(client, login):
 
 def test_summary_requires_login_401(client):
     assert client.get("/api/slots/summary").status_code == 401
+
+
+def enter(client, plate="30A-123.45"):
+    body = {
+        "plate": plate,
+        "confidence": 0.95,
+        "gate_id": "IN-1",
+        "timestamp": "2026-10-19T08:00:00+07:00",
+    }
+    response = client.post("/api/lpr-events", json=body)
+    assert response.status_code == 201
+    return response.json()
+
+
+def test_tc07_suggests_slot_nearest_entrance(client, frozen_clock):
+    assert enter(client, "30A-111.11")["suggested_slot"] == "T1-A-01"
+    sensor(client, "T1-A-01", True)
+    assert enter(client, "30A-222.22")["suggested_slot"] == "T1-A-02"
+
+
+def test_suggestion_orders_by_number_not_text(client, engine, frozen_clock):
+    with Session(engine) as db:
+        db.execute(update(Slot).where(Slot.id < "T1-A-10").values(status="occupied"))
+        db.commit()
+    assert enter(client)["suggested_slot"] == "T1-A-10"
+
+
+def test_suggest_none_when_full(client, engine, frozen_clock):
+    with Session(engine) as db:
+        db.execute(update(Slot).values(status="occupied"))
+        db.commit()
+    body = enter(client)
+    assert body["action"] == "entered"
+    assert body["suggested_slot"] is None
+
+
+def test_reserved_plate_gets_its_reserved_slot(client, login, frozen_clock):
+    reserved = client.post(
+        "/api/reservations",
+        json={"slot_id": "T1-A-05", "plate": "30A-123.45"},
+        headers=login(client, "driver"),
+    )
+    assert reserved.status_code == 201
+    assert enter(client, "30A-123.45")["suggested_slot"] == "T1-A-05"
+    assert enter(client, "30A-222.22")["suggested_slot"] == "T1-A-01"
+
+
+def test_exit_event_has_no_suggestion(client, frozen_clock):
+    enter(client)
+    body = {
+        "plate": "30A-123.45",
+        "confidence": 0.95,
+        "gate_id": "OUT-1",
+        "timestamp": "2026-10-19T09:00:00+07:00",
+    }
+    assert client.post("/api/lpr-events", json=body).json()["suggested_slot"] is None

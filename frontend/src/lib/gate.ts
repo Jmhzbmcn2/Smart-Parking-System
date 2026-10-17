@@ -10,6 +10,7 @@ export type GateEvent = {
   action: 'entered' | 'exited' | 'manual_required' | 'payment_required' | 'payment_failed'
   session_id: number | null
   barrier_opened_at: string | null
+  suggested_slot: string | null
   payment_id: number | null
 }
 
