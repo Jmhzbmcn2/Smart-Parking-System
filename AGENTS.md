@@ -90,7 +90,7 @@ Create only the files each module needs.
 - Do not add encryption before NFR-04 task T-04 in Sprint 3. At T-04, implement field-level personal-data encryption via a SQLAlchemy column type in `core/`, plus HTTPS; the current plain SQLite setup permits this transition.
 - CR-02 is Approved: reservation hold is **10 minutes**, and TC-06 checks expiry at minute **11**. This overrides the workbook's older 15/16-minute wording, including TC-05. CR-02 is scheduled with SP-2.2.1 in Sprint 2. CR-01 monthly passes remain Under Review: do not build them.
 - Root `package.json` has scripts only, `private: true`, and no dependencies. Use latest stable library versions compatible with the stack when adding dependencies; keep installs and lockfiles reproducible. The existing TypeScript version follows the stable ESLint integration's supported range.
-- Keep `.mcp.json` at the repository root unchanged. Do not add Docker, deployment, cloud hosting, GitHub remotes or push as part of the scaffold.
+- Keep `.mcp.json` at the repository root unchanged. Do not add Docker, deployment or cloud hosting. CI runs `npm run check` on push and pull request (`.github/workflows/check.yml`).
 - Preserve original root workbooks while Excel may hold them open; the versioned copies live under `docs/requirements/`. Ignore Excel `~$*` lock files; never commit them.
 
 ## Feature workflow
