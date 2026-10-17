@@ -13,3 +13,7 @@ dist/
 # Root workbook originals remain available while Excel is open.
 /SPMS_requirements.xlsx
 /true (2).xlsx
+
+backend/outbox/
+.data_key
+*.pem

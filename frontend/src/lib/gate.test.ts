@@ -56,6 +56,7 @@ describe('manualPrefill', () => {
     action,
     session_id: null,
     barrier_opened_at: null,
+    suggested_slot: null,
     payment_id: null,
   })
 

@@ -6,10 +6,17 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.modules.audit import service as audit
 from app.modules.auth.models import User
-from app.modules.auth.router import current_user, require_role
-from app.modules.billing import service
+from app.modules.auth.router import current_user, require_device, require_role
+from app.modules.billing import invoice, service
 from app.modules.billing.models import Payment
-from app.modules.billing.schemas import MockResult, PaymentOut, PriceIn, PriceOut
+from app.modules.billing.schemas import (
+    InvoiceRequest,
+    InvoiceResult,
+    MockResult,
+    PaymentOut,
+    PriceIn,
+    PriceOut,
+)
 from app.modules.billing.service import AlreadyPaid
 from app.modules.sessions import service as sessions
 from app.modules.sessions.models import ParkingSession
@@ -58,6 +65,7 @@ def payment_out(db: Session, payment: Payment) -> PaymentOut:
         amount=payment.amount,
         status=payment.status,
         method=payment.method,
+        paid_at=payment.paid_at,
         qr_payload=f"SPMS|{payment.id}|{payment.amount}",
     )
 
@@ -74,7 +82,7 @@ def find_payment(db: Session, payment_id: int) -> Payment:
     return payment
 
 
-@router.post("/payments/{payment_id}/mock")
+@router.post("/payments/{payment_id}/mock", dependencies=[Depends(require_device)])
 def mock_gateway(
     payment_id: int, body: MockResult, db: Annotated[Session, Depends(get_db)]
 ) -> PaymentOut:
@@ -106,3 +114,17 @@ def pay_cash(
     audit.record(db, user, "cash_payment", payment.gate_id, "Thu tiền mặt", event.plate)
     db.commit()
     return payment_out(db, payment)
+
+
+@router.post("/payments/{payment_id}/invoice", status_code=202)
+def send_invoice(
+    payment_id: int, body: InvoiceRequest, db: Annotated[Session, Depends(get_db)]
+) -> InvoiceResult:
+    """Open: the driver asks for it at the exit kiosk after paying."""
+    payment = find_payment(db, payment_id)
+    if payment.status != "paid":
+        raise HTTPException(409, "Payment is not paid yet")
+    session = db.get(ParkingSession, payment.session_id)
+    assert session is not None
+    sent_at, path = invoice.send(payment, session, body.email)
+    return InvoiceResult(sent_at=sent_at, path=path.name if path else None)

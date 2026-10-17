@@ -8,7 +8,9 @@ from sqlalchemy.orm import Session
 from app.core import clock
 from app.modules.billing.models import Payment
 from app.modules.billing.service import AlreadyPaid, current_price, open_payment
+from app.modules.reservations.models import Reservation
 from app.modules.sessions.models import GateEvent, ParkingSession
+from app.modules.slots.service import suggest
 
 PLATE_RE = re.compile(r"^\d{2}[A-Z][A-Z0-9]?-\d{3}\.?\d{2}$")
 CONFIDENCE_THRESHOLD = 0.8
@@ -42,6 +44,18 @@ def _active_session(db: Session, plate: str) -> ParkingSession | None:
     )
 
 
+def _suggested_slot(db: Session, plate: str) -> str | None:
+    """A plate's own live reservation wins over the nearest free slot."""
+    reserved = db.scalar(
+        select(Reservation.slot_id).where(
+            Reservation.plate == plate,
+            Reservation.status == "active",
+            Reservation.expires_at >= clock.now(),
+        )
+    )
+    return reserved or suggest(db)
+
+
 def handle_plate(
     db: Session,
     gate_id: str,
@@ -70,6 +84,7 @@ def handle_plate(
         session = ParkingSession(plate=plate, entry_at=at, price_id=current_price(db).id)
         db.add(session)
         event.action = "entered"
+        event.suggested_slot = _suggested_slot(db, plate)
     else:
         session = _active_session(db, plate)
         if session is None:

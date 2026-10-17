@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import ForeignKey, Index, text
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.crypto import EncryptedString
 from app.core.db import AwareDateTime, Base
 
 
@@ -14,7 +15,7 @@ class ParkingSession(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    plate: Mapped[str]
+    plate: Mapped[str] = mapped_column(EncryptedString)
     entry_at: Mapped[datetime] = mapped_column(AwareDateTime)
     exit_at: Mapped[datetime | None] = mapped_column(AwareDateTime, default=None)
     status: Mapped[str] = mapped_column(default="active")  # "active" | "closed"
@@ -26,7 +27,7 @@ class GateEvent(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     gate_id: Mapped[str]
-    plate: Mapped[str | None]
+    plate: Mapped[str | None] = mapped_column(EncryptedString)
     confidence: Mapped[float | None]
     source: Mapped[str]  # "lpr" | "manual" | "payment"
     received_at: Mapped[datetime] = mapped_column(AwareDateTime)
@@ -35,4 +36,5 @@ class GateEvent(Base):
     ]  # "entered" | "exited" | "manual_required" | "payment_required" | "payment_failed"
     session_id: Mapped[int | None] = mapped_column(ForeignKey("parking_sessions.id"), default=None)
     barrier_opened_at: Mapped[datetime | None] = mapped_column(AwareDateTime, default=None)
+    suggested_slot: Mapped[str | None] = mapped_column(default=None)  # set on "entered"
     payment_id: Mapped[int | None] = mapped_column(ForeignKey("payments.id"), default=None)

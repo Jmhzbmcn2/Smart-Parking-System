@@ -2,6 +2,7 @@
   "private": true,
   "scripts": {
     "dev:be": "uv run --directory backend fastapi dev app/main.py",
+    "dev:be:https": "uv run --directory backend uvicorn app.main:app --port 8443 --ssl-keyfile certs/key.pem --ssl-certfile certs/cert.pem",
     "dev:fe": "npm --prefix frontend run dev",
     "check:be": "uv run --directory backend ruff check . && uv run --directory backend pytest -q",
     "check:fe": "npm --prefix frontend run lint && npm --prefix frontend run test && npm --prefix frontend run build",

@@ -1,3 +1,5 @@
+import base64
+import os
 from collections.abc import Callable, Iterator
 from datetime import datetime
 
@@ -7,7 +9,11 @@ from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
+# A fixed data key for tests, set before the encrypted column type first needs a key.
+os.environ.setdefault("SPMS_DATA_KEY", base64.b64encode(bytes(range(64))).decode())
+
 from app.core import clock
+from app.core.config import DEVICE_KEY
 from app.core.db import Base, get_db
 from app.main import app
 from app.modules.auth.service import seed_users
@@ -47,7 +53,8 @@ def client(engine: Engine) -> Iterator[TestClient]:
 
     app.dependency_overrides[get_db] = override_get_db
     # Outside a context manager, TestClient does not run the production lifespan.
-    test_client = TestClient(app)
+    # Mock devices send the device key; the 401 tests build a bare TestClient(app).
+    test_client = TestClient(app, headers={"X-Device-Key": DEVICE_KEY})
     try:
         yield test_client
     finally:

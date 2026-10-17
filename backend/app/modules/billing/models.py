@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.crypto import EncryptedString
 from app.core.db import AwareDateTime, Base
 
 
@@ -14,7 +15,7 @@ class Price(Base):
     first_price: Mapped[int]  # VND
     per_hour: Mapped[int]  # VND
     created_at: Mapped[datetime] = mapped_column(AwareDateTime)
-    created_by: Mapped[str] = mapped_column(default="system")
+    created_by: Mapped[str] = mapped_column(EncryptedString, default="system")
 
 
 class Payment(Base):

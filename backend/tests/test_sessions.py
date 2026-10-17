@@ -89,3 +89,27 @@ def test_plate_is_normalized(client, login, frozen_clock):
 def test_gate_events_requires_staff_role(client, login):
     assert client.get("/api/gate-events").status_code == 401
     assert client.get("/api/gate-events", headers=login(client, "driver")).status_code == 403
+
+
+def test_device_key_required_401(client, frozen_clock):
+    from fastapi.testclient import TestClient
+
+    from app.core.config import DEVICE_KEY
+    from app.main import app
+
+    bare = TestClient(app)  # no X-Device-Key header, unlike the `client` fixture
+    lpr = {"plate": PLATE, "confidence": 0.95, "gate_id": "IN-1", "timestamp": T0}
+    sensor = {"slot_id": "T1-A-05", "occupied": True}
+    mock = {"success": True}
+    for path, body in (
+        ("/api/lpr-events", lpr),
+        ("/api/sensor-events", sensor),
+        ("/api/payments/1/mock", mock),
+    ):
+        assert bare.post(path, json=body).status_code == 401, path
+        wrong = bare.post(path, json=body, headers={"X-Device-Key": "wrong"})
+        assert wrong.status_code == 401, path
+    right = {"X-Device-Key": DEVICE_KEY}
+    assert bare.post("/api/lpr-events", json=lpr, headers=right).status_code == 201
+    assert bare.post("/api/sensor-events", json=sensor, headers=right).status_code == 200
+    assert bare.post("/api/payments/999/mock", json=mock, headers=right).status_code == 404

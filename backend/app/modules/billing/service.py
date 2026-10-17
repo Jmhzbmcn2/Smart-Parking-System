@@ -16,9 +16,13 @@ class AlreadyPaid(Exception):
     """The payment is already settled."""
 
 
+def billable_hours(minutes: int) -> int:
+    return max(1, math.ceil(minutes / 60))
+
+
 def fee(minutes: int, price: Price) -> int:
     """Parking fee in VND: a flat first block, then each started hour."""
-    hours = max(1, math.ceil(minutes / 60))
+    hours = billable_hours(minutes)
     if hours <= price.first_hours:
         return price.first_price
     return price.first_price + (hours - price.first_hours) * price.per_hour

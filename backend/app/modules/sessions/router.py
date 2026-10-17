@@ -8,7 +8,7 @@ from app.core.db import get_db
 from app.modules.audit import service as audit
 from app.modules.audit.schemas import AuditLogOut
 from app.modules.auth.models import User
-from app.modules.auth.router import require_role
+from app.modules.auth.router import require_device, require_role
 from app.modules.sessions import service
 from app.modules.sessions.schemas import (
     GateEventOut,
@@ -37,7 +37,7 @@ def http_error(exc: Exception) -> HTTPException:
     return HTTPException(status, detail)
 
 
-@router.post("/lpr-events", status_code=201)
+@router.post("/lpr-events", status_code=201, dependencies=[Depends(require_device)])
 def lpr_event(body: LprEventRequest, db: Annotated[Session, Depends(get_db)]) -> GateEventOut:
     try:
         event = service.handle_lpr_event(

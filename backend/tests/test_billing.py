@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 import pytest
 
 from app.modules.billing.models import Price
@@ -208,3 +210,82 @@ def test_driver_cannot_pay_cash_403(client, login, frozen_clock):
     payment_id = start_exit(client)
     response = client.post(f"/api/payments/{payment_id}/cash", headers=login(client, "driver"))
     assert response.status_code == 403
+
+
+def pay_and_invoice(client, login, email="khach@example.com"):
+    payment_id = start_exit(client)
+    mock_pay(client, payment_id, True)
+    return payment_id, client.post(f"/api/payments/{payment_id}/invoice", json={"email": email})
+
+
+def test_tc10_invoice_within_5_minutes(client, login, frozen_clock, monkeypatch, tmp_path):
+    monkeypatch.setenv("SPMS_OUTBOX_DIR", str(tmp_path))
+    monkeypatch.delenv("SPMS_SMTP_HOST", raising=False)
+    payment_id, response = pay_and_invoice(client, login)
+    assert response.status_code == 202
+    body = response.json()
+    mail = (tmp_path / f"{payment_id}.eml").read_text(encoding="utf-8")
+    assert "40.000" in mail
+    assert "30A-123.45" in mail
+    assert "khach@example.com" in mail
+    paid_at = client.get(f"/api/payments/{payment_id}", headers=login(client, "attendant")).json()[
+        "paid_at"
+    ]
+    delay = datetime.fromisoformat(body["sent_at"]) - datetime.fromisoformat(paid_at)
+    assert timedelta(0) <= delay <= timedelta(minutes=5)
+
+
+def test_invoice_unpaid_409(client, frozen_clock, monkeypatch, tmp_path):
+    monkeypatch.setenv("SPMS_OUTBOX_DIR", str(tmp_path))
+    payment_id = start_exit(client)
+    response = client.post(f"/api/payments/{payment_id}/invoice", json={"email": "a@example.com"})
+    assert response.status_code == 409
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_invoice_bad_email_and_unknown_payment(client, frozen_clock, monkeypatch, tmp_path):
+    monkeypatch.setenv("SPMS_OUTBOX_DIR", str(tmp_path))
+    payment_id = start_exit(client)
+    mock_pay(client, payment_id, True)
+    assert (
+        client.post(f"/api/payments/{payment_id}/invoice", json={"email": "x"}).status_code == 422
+    )
+    missing = client.post("/api/payments/999/invoice", json={"email": "a@example.com"})
+    assert missing.status_code == 404
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_invoice_uses_smtp_when_host_is_set(client, login, frozen_clock, monkeypatch, tmp_path):
+    sent = []
+
+    class FakeSMTP:
+        def __init__(self, host, port):
+            sent.append(("connect", host, port))
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def starttls(self):
+            sent.append(("starttls",))
+
+        def login(self, user, password):
+            sent.append(("login", user))
+
+        def send_message(self, message):
+            sent.append(("message", message["To"]))
+
+    monkeypatch.setenv("SPMS_OUTBOX_DIR", str(tmp_path))
+    monkeypatch.setenv("SPMS_SMTP_HOST", "smtp.example.com")
+    monkeypatch.setenv("SPMS_SMTP_PORT", "2525")
+    monkeypatch.setenv("SPMS_SMTP_USER", "mailer")
+    monkeypatch.setenv("SPMS_SMTP_PASSWORD", "secret")
+    monkeypatch.setattr("app.modules.billing.invoice.smtplib.SMTP", FakeSMTP)
+    _, response = pay_and_invoice(client, login)
+    assert response.status_code == 202
+    assert response.json()["path"] is None
+    assert ("connect", "smtp.example.com", 2525) in sent
+    assert ("message", "khach@example.com") in sent
+    assert list(tmp_path.iterdir()) == []
