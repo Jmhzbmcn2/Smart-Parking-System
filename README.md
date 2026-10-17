@@ -1,6 +1,6 @@
 # Smart Parking Management System
 
-SPMS is a CSE703095 Requirements Engineering course project using FastAPI, SQLite, React, Vite and shadcn/ui. Sprints 1 and 2 are implemented: login with roles, LPR gate events, entry/exit sessions, manual entry and barrier with audit log, slot availability, versioned prices, fee and mock QR/cash payment at exit, daily revenue report, and 10-minute slot reservations.
+SPMS is a CSE703095 Requirements Engineering course project using FastAPI, SQLite, React, Vite and shadcn/ui. Sprints 1 to 3 are implemented: login with roles, LPR gate events, entry/exit sessions, manual entry and barrier with audit log, slot availability and nearest-slot suggestion, versioned prices, fee and mock QR/cash payment at exit, email invoice, daily revenue report, 10-minute slot reservations, and encryption of personal data. The 10-minute demo script is in [docs/demo.md](docs/demo.md).
 
 ## Quick start
 
