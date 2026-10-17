@@ -12,6 +12,10 @@ if TYPE_CHECKING:  # sessions imports billing, never the other way round at runt
     from app.modules.sessions.models import ParkingSession
 
 
+class AlreadyPaid(Exception):
+    """The payment is already settled."""
+
+
 def fee(minutes: int, price: Price) -> int:
     """Parking fee in VND: a flat first block, then each started hour."""
     hours = max(1, math.ceil(minutes / 60))

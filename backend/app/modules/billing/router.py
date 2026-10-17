@@ -9,7 +9,9 @@ from app.modules.auth.models import User
 from app.modules.auth.router import current_user, require_role
 from app.modules.billing import service
 from app.modules.billing.models import Payment
-from app.modules.billing.schemas import PaymentOut, PriceIn, PriceOut
+from app.modules.billing.schemas import MockResult, PaymentOut, PriceIn, PriceOut
+from app.modules.billing.service import AlreadyPaid
+from app.modules.sessions import service as sessions
 from app.modules.sessions.models import ParkingSession
 
 router = APIRouter(tags=["billing"])
@@ -62,7 +64,45 @@ def payment_out(db: Session, payment: Payment) -> PaymentOut:
 
 @router.get("/payments/{payment_id}", dependencies=[staff])
 def get_payment(payment_id: int, db: Annotated[Session, Depends(get_db)]) -> PaymentOut:
+    return payment_out(db, find_payment(db, payment_id))
+
+
+def find_payment(db: Session, payment_id: int) -> Payment:
     payment = db.get(Payment, payment_id)
     if payment is None:
         raise HTTPException(404, "Payment not found")
+    return payment
+
+
+@router.post("/payments/{payment_id}/mock")
+def mock_gateway(
+    payment_id: int, body: MockResult, db: Annotated[Session, Depends(get_db)]
+) -> PaymentOut:
+    """Stands in for the payment gateway callback, so it has no authentication."""
+    payment = find_payment(db, payment_id)
+    try:
+        if body.success:
+            sessions.complete_exit(db, payment, "qr")
+        else:
+            sessions.fail_payment(db, payment)
+    except AlreadyPaid as exc:
+        raise HTTPException(409, "Payment already paid") from exc
+    db.commit()
+    return payment_out(db, payment)
+
+
+@router.post("/payments/{payment_id}/cash")
+def pay_cash(
+    payment_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    user: Annotated[User, Depends(require_role("attendant", "admin"))],
+) -> PaymentOut:
+    """HZ-03: the attendant settles the payment in cash; the audit row commits with it."""
+    payment = find_payment(db, payment_id)
+    try:
+        event = sessions.complete_exit(db, payment, "cash")
+    except AlreadyPaid as exc:
+        raise HTTPException(409, "Payment already paid") from exc
+    audit.record(db, user, "cash_payment", payment.gate_id, "Thu tiền mặt", event.plate)
+    db.commit()
     return payment_out(db, payment)

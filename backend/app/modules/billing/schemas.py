@@ -18,6 +18,10 @@ class PriceOut(PriceIn):
     created_by: str
 
 
+class MockResult(BaseModel):
+    success: bool
+
+
 class PaymentOut(BaseModel):
     id: int
     session_id: int

@@ -6,7 +6,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core import clock
-from app.modules.billing.service import current_price, open_payment
+from app.modules.billing.models import Payment
+from app.modules.billing.service import AlreadyPaid, current_price, open_payment
 from app.modules.sessions.models import GateEvent, ParkingSession
 
 PLATE_RE = re.compile(r"^\d{2}[A-Z][A-Z0-9]?-\d{3}\.?\d{2}$")
@@ -125,3 +126,52 @@ def list_sessions(db: Session, status: str | None) -> list[ParkingSession]:
     if status is not None:
         query = query.where(ParkingSession.status == status)
     return list(db.scalars(query))
+
+
+def complete_exit(db: Session, payment: Payment, method: str) -> GateEvent:
+    """Settle the payment, close the session and open the exit barrier. Flushes only."""
+    if payment.status == "paid":
+        raise AlreadyPaid(payment.id)
+    now = clock.now()
+    payment.status = "paid"
+    payment.paid_at = now
+    payment.method = method
+    session = db.get(ParkingSession, payment.session_id)
+    assert session is not None
+    session.status = "closed"
+    event = GateEvent(
+        gate_id=payment.gate_id,
+        plate=session.plate,
+        confidence=None,
+        source="payment",
+        received_at=now,
+        action="exited",
+        session_id=session.id,
+        payment_id=payment.id,
+        barrier_opened_at=now,
+    )
+    db.add(event)
+    db.flush()
+    return event
+
+
+def fail_payment(db: Session, payment: Payment) -> GateEvent:
+    """The gateway reported a failure: the barrier stays closed. Flushes only."""
+    if payment.status == "paid":
+        raise AlreadyPaid(payment.id)
+    payment.status = "failed"
+    session = db.get(ParkingSession, payment.session_id)
+    assert session is not None
+    event = GateEvent(
+        gate_id=payment.gate_id,
+        plate=session.plate,
+        confidence=None,
+        source="payment",
+        received_at=clock.now(),
+        action="payment_failed",
+        session_id=session.id,
+        payment_id=payment.id,
+    )
+    db.add(event)
+    db.flush()
+    return event

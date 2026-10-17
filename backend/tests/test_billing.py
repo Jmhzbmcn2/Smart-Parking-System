@@ -124,3 +124,87 @@ def test_payment_requires_staff(client, login):
     assert client.get("/api/payments/1").status_code == 401
     assert client.get("/api/payments/1", headers=login(client, "driver")).status_code == 403
     assert client.get("/api/payments/999", headers=login(client, "attendant")).status_code == 404
+
+
+def start_exit(client):
+    post_lpr(client)
+    return exit_gate(client).json()["payment_id"]
+
+
+def mock_pay(client, payment_id, success):
+    return client.post(f"/api/payments/{payment_id}/mock", json={"success": success})
+
+
+def gate_events(client, login):
+    return client.get("/api/gate-events", headers=login(client, "attendant")).json()
+
+
+def test_tc09_failed_qr_keeps_barrier_closed(client, login, frozen_clock):
+    payment_id = start_exit(client)
+    response = mock_pay(client, payment_id, False)
+    assert response.status_code == 200
+    assert response.json()["status"] == "failed"
+    newest = gate_events(client, login)[0]
+    assert newest["action"] == "payment_failed"
+    assert newest["barrier_opened_at"] is None
+    assert sessions(client, login)[0]["status"] == "active"
+
+
+def test_tc03_exit_closes_session(client, login, frozen_clock):
+    payment_id = start_exit(client)
+    response = mock_pay(client, payment_id, True)
+    assert response.status_code == 200
+    assert (response.json()["status"], response.json()["method"]) == ("paid", "qr")
+    [session] = sessions(client, login)
+    assert session["status"] == "closed"
+    assert session["exit_at"] is not None
+    newest = gate_events(client, login)[0]
+    assert newest["action"] == "exited"
+    assert newest["barrier_opened_at"] is not None
+    assert newest["gate_id"] == "OUT-1"
+
+
+def test_failed_qr_can_be_retried(client, login, frozen_clock):
+    payment_id = start_exit(client)
+    mock_pay(client, payment_id, False)
+    assert mock_pay(client, payment_id, True).json()["status"] == "paid"
+    assert sessions(client, login)[0]["status"] == "closed"
+
+
+def test_pay_twice_409(client, login, frozen_clock):
+    payment_id = start_exit(client)
+    mock_pay(client, payment_id, True)
+    before = len(gate_events(client, login))
+    assert mock_pay(client, payment_id, True).status_code == 409
+    assert mock_pay(client, payment_id, False).status_code == 409
+    cash = client.post(f"/api/payments/{payment_id}/cash", headers=login(client, "attendant"))
+    assert cash.status_code == 409
+    assert len(gate_events(client, login)) == before
+
+
+def test_mock_unknown_payment_404(client):
+    response = mock_pay(client, 999, True)
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Payment not found"
+
+
+def test_cash_after_failed_qr_closes_and_audits(client, login, frozen_clock):
+    payment_id = start_exit(client)
+    mock_pay(client, payment_id, False)
+    response = client.post(f"/api/payments/{payment_id}/cash", headers=login(client, "attendant"))
+    assert response.status_code == 200
+    assert (response.json()["status"], response.json()["method"]) == ("paid", "cash")
+    assert sessions(client, login)[0]["status"] == "closed"
+    assert gate_events(client, login)[0]["barrier_opened_at"] is not None
+    [row] = client.get("/api/audit-log", headers=login(client, "admin")).json()
+    assert (row["action"], row["username"], row["reason"]) == (
+        "cash_payment",
+        "attendant",
+        "Thu tiền mặt",
+    )
+
+
+def test_driver_cannot_pay_cash_403(client, login, frozen_clock):
+    payment_id = start_exit(client)
+    response = client.post(f"/api/payments/{payment_id}/cash", headers=login(client, "driver"))
+    assert response.status_code == 403
