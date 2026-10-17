@@ -3,21 +3,41 @@ from datetime import datetime
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.core import clock
 from app.core.db import Base, get_db
 from app.main import app
+from app.modules.auth.service import seed_users
+from app.modules.slots.service import seed_slots
 
 
 @pytest.fixture
-def client() -> Iterator[TestClient]:
+def engine() -> Iterator[Engine]:
     engine = create_engine(
         "sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool
     )
     Base.metadata.create_all(engine)
+    try:
+        yield engine
+    finally:
+        engine.dispose()
+
+
+@pytest.fixture
+def db(engine: Engine) -> Iterator[Session]:
+    """Unseeded session on the in-memory database."""
+    with Session(engine) as session:
+        yield session
+
+
+@pytest.fixture
+def client(engine: Engine) -> Iterator[TestClient]:
+    with Session(engine) as session:
+        seed_slots(session)
+        seed_users(session)
 
     def override_get_db() -> Iterator[Session]:
         with Session(engine) as session:
@@ -31,7 +51,6 @@ def client() -> Iterator[TestClient]:
     finally:
         test_client.close()
         app.dependency_overrides.clear()
-        engine.dispose()
 
 
 @pytest.fixture

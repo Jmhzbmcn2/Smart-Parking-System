@@ -3,13 +3,20 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.core.db import init_db
+from app.core.db import SessionLocal, init_db
+from app.modules.auth import models as auth_models  # noqa: F401  (registers tables)
+from app.modules.auth.service import seed_users
 from app.modules.health.router import router as health_router
+from app.modules.slots import models as slot_models  # noqa: F401  (registers tables)
+from app.modules.slots.service import seed_slots
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     init_db()
+    with SessionLocal() as db:
+        seed_slots(db)
+        seed_users(db)
     yield
 
 
