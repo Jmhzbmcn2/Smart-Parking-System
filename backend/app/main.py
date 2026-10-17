@@ -4,6 +4,8 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.core.db import SessionLocal, init_db
+from app.modules.audit import models as audit_models  # noqa: F401  (registers tables)
+from app.modules.audit.router import router as audit_router
 from app.modules.auth import models as auth_models  # noqa: F401  (registers tables)
 from app.modules.auth.router import router as auth_router
 from app.modules.auth.service import seed_users
@@ -27,3 +29,4 @@ app = FastAPI(title="SPMS", lifespan=lifespan)
 app.include_router(health_router, prefix="/api")
 app.include_router(auth_router, prefix="/api")
 app.include_router(sessions_router, prefix="/api")
+app.include_router(audit_router, prefix="/api")

@@ -13,6 +13,16 @@ class LprEventRequest(BaseModel):
     timestamp: AwareDatetime
 
 
+class ManualOpenRequest(BaseModel):
+    gate_id: GateId
+    reason: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
+
+class ManualEntryRequest(BaseModel):
+    gate_id: GateId
+    plate: str
+
+
 class GateEventOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
