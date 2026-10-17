@@ -1,6 +1,7 @@
 import hashlib
 import hmac
 import os
+import secrets
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -33,3 +34,17 @@ def seed_users(db: Session) -> None:
         if db.scalar(select(User).where(User.username == username)) is None:
             db.add(User(username=username, password_hash=hash_password(password), role=role))
     db.commit()
+
+
+def login(db: Session, username: str, password: str) -> User | None:
+    """Check the password and issue a new token, which replaces the old one."""
+    user = db.scalar(select(User).where(User.username == username))
+    if user is None or not verify_password(password, user.password_hash):
+        return None
+    user.token = secrets.token_urlsafe(32)
+    db.commit()
+    return user
+
+
+def user_by_token(db: Session, token: str) -> User | None:
+    return db.scalar(select(User).where(User.token == token))

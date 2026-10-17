@@ -5,6 +5,7 @@ from fastapi import FastAPI
 
 from app.core.db import SessionLocal, init_db
 from app.modules.auth import models as auth_models  # noqa: F401  (registers tables)
+from app.modules.auth.router import router as auth_router
 from app.modules.auth.service import seed_users
 from app.modules.health.router import router as health_router
 from app.modules.slots import models as slot_models  # noqa: F401  (registers tables)
@@ -22,3 +23,4 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="SPMS", lifespan=lifespan)
 app.include_router(health_router, prefix="/api")
+app.include_router(auth_router, prefix="/api")

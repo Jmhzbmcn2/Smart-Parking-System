@@ -60,3 +60,17 @@ def frozen_clock() -> Iterator[Callable[[datetime | None], None]]:
         yield clock.freeze
     finally:
         clock.freeze(None)
+
+
+@pytest.fixture
+def login() -> Callable[[TestClient, str], dict[str, str]]:
+    """Return a function that logs in a demo user and gives back its auth header."""
+
+    def _login(client: TestClient, username: str) -> dict[str, str]:
+        response = client.post(
+            "/api/auth/login", json={"username": username, "password": f"{username}123"}
+        )
+        assert response.status_code == 200, response.text
+        return {"Authorization": f"Bearer {response.json()['token']}"}
+
+    return _login
