@@ -35,7 +35,9 @@ export default function App() {
     return () => window.removeEventListener('spms:logout', onLogout)
   }, [])
 
-  function logout() {
+  async function logout() {
+    // Invalidate the token on the server first; log out locally even if that call fails.
+    await api('/auth/logout', { method: 'POST' }).catch(() => undefined)
     clearSession()
     setSession(null)
   }

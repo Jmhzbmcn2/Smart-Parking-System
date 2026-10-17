@@ -48,3 +48,14 @@ def test_me_with_stale_token_401(client, login):
     first = login(client, "driver")
     login(client, "driver")
     assert client.get("/api/auth/me", headers=first).status_code == 401
+
+
+def test_logout_invalidates_token(client, login):
+    headers = login(client, "driver")
+    assert client.get("/api/auth/me", headers=headers).status_code == 200
+    assert client.post("/api/auth/logout", headers=headers).status_code == 204
+    assert client.get("/api/auth/me", headers=headers).status_code == 401
+
+
+def test_logout_requires_login(client):
+    assert client.post("/api/auth/logout").status_code == 401

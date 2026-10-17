@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import urllib.error
 import urllib.request
 from datetime import datetime, timedelta, timezone
@@ -22,7 +23,10 @@ body = {
 request = urllib.request.Request(
     f"{args.url}/api/lpr-events",
     data=json.dumps(body).encode(),
-    headers={"Content-Type": "application/json"},
+    headers={
+        "Content-Type": "application/json",
+        "X-Device-Key": os.environ.get("SPMS_DEVICE_KEY", "dev-device-key"),
+    },
 )
 try:
     with urllib.request.urlopen(request) as response:

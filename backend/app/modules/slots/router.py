@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
-from app.modules.auth.router import current_user
+from app.modules.auth.router import current_user, require_device
 from app.modules.reservations.service import expire_due
 from app.modules.slots import service
 from app.modules.slots.schemas import FloorZoneSummary, SensorEvent, SensorResult, SlotOut
@@ -12,7 +12,7 @@ from app.modules.slots.schemas import FloorZoneSummary, SensorEvent, SensorResul
 router = APIRouter(tags=["slots"])
 
 
-@router.post("/sensor-events")
+@router.post("/sensor-events", dependencies=[Depends(require_device)])
 def sensor_event(body: SensorEvent, db: Annotated[Session, Depends(get_db)]) -> SensorResult:
     try:
         slot = service.set_occupied(db, body.slot_id, body.occupied)

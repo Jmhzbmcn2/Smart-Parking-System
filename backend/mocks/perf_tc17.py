@@ -7,6 +7,7 @@ Run it against a throwaway database, see docs/testing/tc17-results.md.
 import argparse
 import json
 import math
+import os
 import statistics
 import sys
 import time
@@ -32,7 +33,10 @@ def entry_latency_ms(url: str, i: int) -> float:
     request = urllib.request.Request(
         f"{url}/api/lpr-events",
         data=json.dumps(body).encode(),
-        headers={"Content-Type": "application/json"},
+        headers={
+            "Content-Type": "application/json",
+            "X-Device-Key": os.environ.get("SPMS_DEVICE_KEY", "dev-device-key"),
+        },
     )
     start = time.perf_counter()
     with urllib.request.urlopen(request) as response:

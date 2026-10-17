@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import os
 import urllib.error
 import urllib.request
 
@@ -16,7 +17,10 @@ args = parser.parse_args()
 request = urllib.request.Request(
     f"{args.url}/api/sensor-events",
     data=json.dumps({"slot_id": args.slot_id, "occupied": args.occupied}).encode(),
-    headers={"Content-Type": "application/json"},
+    headers={
+        "Content-Type": "application/json",
+        "X-Device-Key": os.environ.get("SPMS_DEVICE_KEY", "dev-device-key"),
+    },
 )
 try:
     with urllib.request.urlopen(request) as response:

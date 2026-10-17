@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.db import get_db
 from app.modules.audit import service as audit
 from app.modules.auth.models import User
-from app.modules.auth.router import current_user, require_role
+from app.modules.auth.router import current_user, require_device, require_role
 from app.modules.billing import invoice, service
 from app.modules.billing.models import Payment
 from app.modules.billing.schemas import (
@@ -82,7 +82,7 @@ def find_payment(db: Session, payment_id: int) -> Payment:
     return payment
 
 
-@router.post("/payments/{payment_id}/mock")
+@router.post("/payments/{payment_id}/mock", dependencies=[Depends(require_device)])
 def mock_gateway(
     payment_id: int, body: MockResult, db: Annotated[Session, Depends(get_db)]
 ) -> PaymentOut:
