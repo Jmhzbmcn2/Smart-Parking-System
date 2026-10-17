@@ -13,6 +13,7 @@ from app.modules.billing import models as billing_models  # noqa: F401  (registe
 from app.modules.billing.router import router as billing_router
 from app.modules.billing.service import seed_price
 from app.modules.health.router import router as health_router
+from app.modules.reports.router import router as reports_router
 from app.modules.sessions import models as session_models  # noqa: F401  (registers tables)
 from app.modules.sessions.router import router as sessions_router
 from app.modules.slots import models as slot_models  # noqa: F401  (registers tables)
@@ -37,3 +38,4 @@ app.include_router(sessions_router, prefix="/api")
 app.include_router(audit_router, prefix="/api")
 app.include_router(slots_router, prefix="/api")
 app.include_router(billing_router, prefix="/api")
+app.include_router(reports_router, prefix="/api")
