@@ -10,10 +10,10 @@ Backend module names mean `backend/app/modules/<name>/`; frontend page names mea
 
 | ID | Title | Priority | Sprint | Backend module | Frontend page | Test cases | Status |
 |---|---|---|---|---|---|---|---|
-| SP-1.1 | Ghi nhận xe vào | Must | Sprint 1 | `sessions` | gate | TC-01 | Not started |
-| SP-1.2 | Mở barrier tự động | Must | Sprint 1 | `sessions` | gate | TC-02 | Not started |
-| SP-1.3 | Đóng phiên đỗ khi xe ra | Must | Sprint 1 | `sessions` | gate | TC-03 | Not started |
-| SP-2.1 | Hiển thị chỗ trống | Must | Sprint 1 | `slots` | driver | TC-04 | Not started |
+| SP-1.1 | Ghi nhận xe vào | Must | Sprint 1 | `sessions` | gate | TC-01 | Done |
+| SP-1.2 | Mở barrier tự động | Must | Sprint 1 | `sessions` | gate | TC-02 | Done |
+| SP-1.3 | Đóng phiên đỗ khi xe ra | Must | Sprint 1 | `sessions` | gate | TC-03 | Done (payment check added in Sprint 2) |
+| SP-2.1 | Hiển thị chỗ trống | Must | Sprint 1 | `slots` | driver | TC-04 | Done |
 | SP-2.2.1 | Giữ chỗ trước | Should | Sprint 2 | `reservations` | driver | TC-05 | Not started |
 | SP-2.2.2 | Tự hủy đặt chỗ quá hạn | Should | Sprint 2 | `reservations` | driver | TC-06 | Not started |
 | SP-2.3 | Gợi ý slot gần lối vào | Could | Sprint 3 | `slots` | driver | TC-07 | Not started |
@@ -22,10 +22,10 @@ Backend module names mean `backend/app/modules/<name>/`; frontend page names mea
 | SP-3.3 | Hóa đơn điện tử | Could | Sprint 3 | `billing` | gate, admin | TC-10 | Not started |
 | SP-4.1 | Cấu hình bảng giá | Must | Sprint 2 | `billing` | gate, admin | TC-11 | Not started |
 | SP-4.2 | Báo cáo doanh thu ngày | Should | Sprint 2 | `reports` | admin | TC-12 | Not started |
-| SP-4.3 | Phân quyền theo vai trò | Must | Sprint 1 | `auth` | login; guards all pages | TC-13 | Not started |
-| SP-4.4 | Audit log mở barrier thủ công | Must | Sprint 1 | `audit` | admin | TC-14 | Not started |
-| IF-01 | Nhận sự kiện từ LPR Camera | Must | Sprint 1 | `sessions` | gate | TC-15 | Not started |
-| IF-02 | Nhập tay khi LPR không chắc chắn | Must | Sprint 1 | `sessions` | gate | TC-16 | Not started |
+| SP-4.3 | Phân quyền theo vai trò | Must | Sprint 1 | `auth` | login; guards all pages | TC-13 | Done (TC-13 re-checked on price page in Sprint 2) |
+| SP-4.4 | Audit log mở barrier thủ công | Must | Sprint 1 | `audit` | admin | TC-14 | Done |
+| IF-01 | Nhận sự kiện từ LPR Camera | Must | Sprint 1 | `sessions` | gate | TC-15 | Done |
+| IF-02 | Nhập tay khi LPR không chắc chắn | Must | Sprint 1 | `sessions` | gate | TC-16 | Done |
 
 ## Nonfunctional requirements
 

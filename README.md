@@ -1,6 +1,6 @@
 # Smart Parking Management System
 
-SPMS is a CSE703095 Requirements Engineering course project using FastAPI, SQLite, React, Vite and shadcn/ui. This scaffold contains a health API and a Driver / Gate / Admin shell; parking features are not implemented yet.
+SPMS is a CSE703095 Requirements Engineering course project using FastAPI, SQLite, React, Vite and shadcn/ui. Sprint 1 is implemented: login with roles, LPR gate events, entry/exit sessions, manual entry and barrier with audit log, and slot availability.
 
 ## Quick start
 
@@ -32,6 +32,19 @@ npm run check
 ```
 
 This runs Ruff and pytest in `backend/`, then ESLint, `tsc -b` and Vite build in `frontend/`. Root `check:be` and `check:fe` scripts are available for focused checks. If PowerShell blocks `npm.ps1`, replace `npm` with `npm.cmd`; the command arguments stay the same.
+
+## Demo users and mock devices
+
+Demo logins: `admin/admin123`, `attendant/attendant123`, `driver/driver123`. With the backend running (`npm run dev:be`), mock devices run from the repository root:
+
+```text
+uv run --directory backend python mocks/lpr.py 30A-123.45 --gate IN-1 --confidence 0.95
+uv run --directory backend python mocks/lpr.py 30A-123.45 --gate OUT-1
+uv run --directory backend python mocks/sensor.py T1-A-05 --occupied
+uv run --directory backend python mocks/sensor.py T1-A-05 --free
+```
+
+`--confidence 0.6` makes the Gate page ask for manual entry. Add `--url http://localhost:PORT` if the backend is not on port 8000.
 
 ## Requirements and agent workflow
 
