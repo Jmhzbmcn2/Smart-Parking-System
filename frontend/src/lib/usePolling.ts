@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react'
 
 import { api } from '@/lib/api'
 
-/** Fetch `path` now and every `ms`; keeps the last data when a request fails. */
-export function usePolling<T>(path: string, ms: number) {
+/** Fetch `path` now and every `ms`; keeps the last data when a request fails. A null path pauses. */
+export function usePolling<T>(path: string | null, ms: number) {
   const [data, setData] = useState<T | null>(null)
   const [tick, setTick] = useState(0)
 
   useEffect(() => {
+    if (path === null) return
     let alive = true
     const load = () =>
       api<T>(path)
@@ -21,5 +22,5 @@ export function usePolling<T>(path: string, ms: number) {
     }
   }, [path, ms, tick])
 
-  return { data, refresh: () => setTick((t) => t + 1) }
+  return { data: path === null ? null : data, refresh: () => setTick((t) => t + 1) }
 }

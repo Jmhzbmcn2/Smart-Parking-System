@@ -18,6 +18,7 @@ class ParkingSession(Base):
     entry_at: Mapped[datetime] = mapped_column(AwareDateTime)
     exit_at: Mapped[datetime | None] = mapped_column(AwareDateTime, default=None)
     status: Mapped[str] = mapped_column(default="active")  # "active" | "closed"
+    price_id: Mapped[int] = mapped_column(ForeignKey("prices.id"))  # price at entry (TC-11)
 
 
 class GateEvent(Base):
@@ -27,8 +28,11 @@ class GateEvent(Base):
     gate_id: Mapped[str]
     plate: Mapped[str | None]
     confidence: Mapped[float | None]
-    source: Mapped[str]  # "lpr" | "manual"
+    source: Mapped[str]  # "lpr" | "manual" | "payment"
     received_at: Mapped[datetime] = mapped_column(AwareDateTime)
-    action: Mapped[str]  # "entered" | "exited" | "manual_required"
+    action: Mapped[
+        str
+    ]  # "entered" | "exited" | "manual_required" | "payment_required" | "payment_failed"
     session_id: Mapped[int | None] = mapped_column(ForeignKey("parking_sessions.id"), default=None)
     barrier_opened_at: Mapped[datetime | None] = mapped_column(AwareDateTime, default=None)
+    payment_id: Mapped[int | None] = mapped_column(ForeignKey("payments.id"), default=None)

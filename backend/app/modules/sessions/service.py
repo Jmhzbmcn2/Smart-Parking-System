@@ -6,6 +6,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core import clock
+from app.modules.billing.models import Payment
+from app.modules.billing.service import AlreadyPaid, current_price, open_payment
 from app.modules.sessions.models import GateEvent, ParkingSession
 
 PLATE_RE = re.compile(r"^\d{2}[A-Z][A-Z0-9]?-\d{3}\.?\d{2}$")
@@ -18,6 +20,10 @@ class PlateConflict(Exception):
 
 class NoActiveSession(Exception):
     """The plate has no Active session to close."""
+
+
+class InvalidExitTime(Exception):
+    """The exit time is earlier than the entry time."""
 
 
 class InvalidPlate(Exception):
@@ -44,7 +50,7 @@ def handle_plate(
     source: str,
     confidence: float | None,
 ) -> GateEvent:
-    """Enter or exit a plate by gate prefix (IN-/OUT-) and open the barrier.
+    """Enter a plate (opens the barrier) or start an exit (asks for payment) by gate prefix.
 
     Flushes but does not commit, so the caller can add an audit row in the same transaction.
     """
@@ -61,23 +67,29 @@ def handle_plate(
     if gate_id.startswith("IN-"):
         if _active_session(db, plate) is not None:
             raise PlateConflict(plate)
-        session = ParkingSession(plate=plate, entry_at=at)
+        session = ParkingSession(plate=plate, entry_at=at, price_id=current_price(db).id)
         db.add(session)
         event.action = "entered"
     else:
         session = _active_session(db, plate)
         if session is None:
             raise NoActiveSession(plate)
-        session.exit_at = at
-        session.status = "closed"
-        event.action = "exited"
+        if at < session.entry_at:
+            raise InvalidExitTime(plate)
+        if session.exit_at is None:  # a repeat exit keeps the first exit time and payment
+            session.exit_at = at
+        # Payment closes the session and opens the barrier (see complete_exit).
+        payment = open_payment(db, session, gate_id)
+        event.action = "payment_required"
+        event.payment_id = payment.id
     try:
         db.flush()
     except IntegrityError as exc:  # concurrent duplicate entry hit the unique index
         db.rollback()
         raise PlateConflict(plate) from exc
     event.session_id = session.id
-    event.barrier_opened_at = clock.now()
+    if event.action == "entered":
+        event.barrier_opened_at = clock.now()
     db.add(event)
     db.flush()
     return event
@@ -114,3 +126,52 @@ def list_sessions(db: Session, status: str | None) -> list[ParkingSession]:
     if status is not None:
         query = query.where(ParkingSession.status == status)
     return list(db.scalars(query))
+
+
+def complete_exit(db: Session, payment: Payment, method: str) -> GateEvent:
+    """Settle the payment, close the session and open the exit barrier. Flushes only."""
+    if payment.status == "paid":
+        raise AlreadyPaid(payment.id)
+    now = clock.now()
+    payment.status = "paid"
+    payment.paid_at = now
+    payment.method = method
+    session = db.get(ParkingSession, payment.session_id)
+    assert session is not None
+    session.status = "closed"
+    event = GateEvent(
+        gate_id=payment.gate_id,
+        plate=session.plate,
+        confidence=None,
+        source="payment",
+        received_at=now,
+        action="exited",
+        session_id=session.id,
+        payment_id=payment.id,
+        barrier_opened_at=now,
+    )
+    db.add(event)
+    db.flush()
+    return event
+
+
+def fail_payment(db: Session, payment: Payment) -> GateEvent:
+    """The gateway reported a failure: the barrier stays closed. Flushes only."""
+    if payment.status == "paid":
+        raise AlreadyPaid(payment.id)
+    payment.status = "failed"
+    session = db.get(ParkingSession, payment.session_id)
+    assert session is not None
+    event = GateEvent(
+        gate_id=payment.gate_id,
+        plate=session.plate,
+        confidence=None,
+        source="payment",
+        received_at=clock.now(),
+        action="payment_failed",
+        session_id=session.id,
+        payment_id=payment.id,
+    )
+    db.add(event)
+    db.flush()
+    return event

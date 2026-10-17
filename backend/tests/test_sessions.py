@@ -42,20 +42,7 @@ def test_tc02_barrier_opens_within_3s(client, frozen_clock):
     assert timedelta(0) <= opened - received <= timedelta(seconds=3)
 
 
-def test_tc03_exit_closes_session(client, login, frozen_clock):
-    from app.core import clock
-
-    post_lpr(client)
-    clock.freeze(clock.now() + timedelta(hours=1))
-    response = post_lpr(client, gate="OUT-1", timestamp="2026-10-19T09:00:00+07:00")
-    assert response.status_code == 201
-    assert response.json()["action"] == "exited"
-    assert response.json()["barrier_opened_at"] is not None
-    [closed] = sessions(client, login)
-    assert closed["status"] == "closed"
-    assert datetime.fromisoformat(closed["exit_at"]) == datetime.fromisoformat(
-        "2026-10-19T09:00:00+07:00"
-    )
+# test_tc03_exit_closes_session moved to test_billing.py: exit now waits for payment (Sprint 2).
 
 
 def test_duplicate_entry_409(client, login, frozen_clock):

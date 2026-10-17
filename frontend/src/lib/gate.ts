@@ -7,9 +7,30 @@ export type GateEvent = {
   confidence: number | null
   source: string
   received_at: string
-  action: 'entered' | 'exited' | 'manual_required'
+  action: 'entered' | 'exited' | 'manual_required' | 'payment_required' | 'payment_failed'
   session_id: number | null
   barrier_opened_at: string | null
+  payment_id: number | null
+}
+
+export type Payment = {
+  id: number
+  session_id: number
+  plate: string
+  gate_id: string
+  amount: number
+  status: 'pending' | 'paid' | 'failed'
+  method: 'qr' | 'cash' | null
+  qr_payload: string
+}
+
+/**
+ * The payment of the newest payment_required / payment_failed event (events are newest first).
+ * Other gate events must not hide it; the caller hides it once the payment status is "paid".
+ */
+export function pendingPaymentId(events: GateEvent[] | null | undefined): number | null {
+  const event = events?.find((e) => e.action === 'payment_required' || e.action === 'payment_failed')
+  return event?.payment_id ?? null
 }
 
 export function normalizePlate(plate: string): string {

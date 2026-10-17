@@ -1,6 +1,6 @@
 # Smart Parking Management System
 
-SPMS is a CSE703095 Requirements Engineering course project using FastAPI, SQLite, React, Vite and shadcn/ui. Sprint 1 is implemented: login with roles, LPR gate events, entry/exit sessions, manual entry and barrier with audit log, and slot availability.
+SPMS is a CSE703095 Requirements Engineering course project using FastAPI, SQLite, React, Vite and shadcn/ui. Sprints 1 and 2 are implemented: login with roles, LPR gate events, entry/exit sessions, manual entry and barrier with audit log, slot availability, versioned prices, fee and mock QR/cash payment at exit, daily revenue report, and 10-minute slot reservations.
 
 ## Quick start
 
@@ -42,9 +42,13 @@ uv run --directory backend python mocks/lpr.py 30A-123.45 --gate IN-1 --confiden
 uv run --directory backend python mocks/lpr.py 30A-123.45 --gate OUT-1
 uv run --directory backend python mocks/sensor.py T1-A-05 --occupied
 uv run --directory backend python mocks/sensor.py T1-A-05 --free
+uv run --directory backend python mocks/payment.py 1 --success
+uv run --directory backend python mocks/payment.py 1 --fail
 ```
 
-`--confidence 0.6` makes the Gate page ask for manual entry. Add `--url http://localhost:PORT` if the backend is not on port 8000.
+`--confidence 0.6` makes the Gate page ask for manual entry. An exit event creates a pending payment; `mocks/payment.py <payment_id>` plays the payment gateway (the Gate page also has buttons for it, and one for cash). The reservation hold is 10 minutes (CR-02). Add `--url http://localhost:PORT` if the backend is not on port 8000.
+
+**After pulling Sprint 2, delete `backend/spms.db`:** the schema changed and there are no migrations yet. The backend recreates and seeds it on the next start.
 
 ## Requirements and agent workflow
 

@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { barrierOpen, formatTime, isValidPlate, manualPrefill, type GateEvent } from './gate'
+import {
+  barrierOpen,
+  formatTime,
+  isValidPlate,
+  manualPrefill,
+  pendingPaymentId,
+  type GateEvent,
+} from './gate'
 
 const NOW = Date.parse('2026-10-19T08:00:10+07:00')
 
@@ -49,6 +56,7 @@ describe('manualPrefill', () => {
     action,
     session_id: null,
     barrier_opened_at: null,
+    payment_id: null,
   })
 
   it('uses the gate and plate of a manual_required event, including an exit gate', () => {
@@ -58,5 +66,30 @@ describe('manualPrefill', () => {
   it('falls back to IN-1 and an empty plate otherwise', () => {
     expect(manualPrefill(event('entered', 'OUT-1'))).toEqual({ gate: 'IN-1', plate: '' })
     expect(manualPrefill(undefined)).toEqual({ gate: 'IN-1', plate: '' })
+  })
+})
+
+describe('pendingPaymentId', () => {
+  const event = (action: GateEvent['action'], payment_id: number | null) =>
+    ({ action, payment_id }) as GateEvent
+
+  it('returns the payment of the newest payment_required or payment_failed event', () => {
+    expect(pendingPaymentId([event('payment_required', 7)])).toBe(7)
+    expect(pendingPaymentId([event('payment_failed', 7), event('payment_required', 7)])).toBe(7)
+  })
+
+  it('still finds it when newer, unrelated events arrive meanwhile', () => {
+    const events = [event('entered', null), event('manual_required', null), event('payment_required', 7)]
+    expect(pendingPaymentId(events)).toBe(7)
+  })
+
+  it('prefers the newest payment when several are waiting', () => {
+    expect(pendingPaymentId([event('payment_required', 9), event('payment_required', 7)])).toBe(9)
+  })
+
+  it('returns null without payment events or without events', () => {
+    expect(pendingPaymentId([event('entered', null), event('exited', 7)])).toBeNull()
+    expect(pendingPaymentId([])).toBeNull()
+    expect(pendingPaymentId(null)).toBeNull()
   })
 })

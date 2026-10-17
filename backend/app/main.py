@@ -9,7 +9,13 @@ from app.modules.audit.router import router as audit_router
 from app.modules.auth import models as auth_models  # noqa: F401  (registers tables)
 from app.modules.auth.router import router as auth_router
 from app.modules.auth.service import seed_users
+from app.modules.billing import models as billing_models  # noqa: F401  (registers tables)
+from app.modules.billing.router import router as billing_router
+from app.modules.billing.service import seed_price
 from app.modules.health.router import router as health_router
+from app.modules.reports.router import router as reports_router
+from app.modules.reservations import models as reservation_models  # noqa: F401  (registers tables)
+from app.modules.reservations.router import router as reservations_router
 from app.modules.sessions import models as session_models  # noqa: F401  (registers tables)
 from app.modules.sessions.router import router as sessions_router
 from app.modules.slots import models as slot_models  # noqa: F401  (registers tables)
@@ -23,6 +29,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     with SessionLocal() as db:
         seed_slots(db)
         seed_users(db)
+        seed_price(db)
     yield
 
 
@@ -32,3 +39,6 @@ app.include_router(auth_router, prefix="/api")
 app.include_router(sessions_router, prefix="/api")
 app.include_router(audit_router, prefix="/api")
 app.include_router(slots_router, prefix="/api")
+app.include_router(billing_router, prefix="/api")
+app.include_router(reports_router, prefix="/api")
+app.include_router(reservations_router, prefix="/api")

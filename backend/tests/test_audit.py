@@ -92,7 +92,9 @@ def test_manual_entry_rolls_back_when_audit_fails(client, login, frozen_clock, m
     headers = login(client, "attendant")
     monkeypatch.setattr(audit_service, "record", broken_record)
     with pytest.raises(RuntimeError):
-        client.post("/api/gate/manual-entry", json={"gate_id": "IN-1", "plate": PLATE}, headers=headers)
+        client.post(
+            "/api/gate/manual-entry", json={"gate_id": "IN-1", "plate": PLATE}, headers=headers
+        )
     monkeypatch.undo()
     assert sessions(client, login, "active") == []
     assert audit_log(client, login) == []

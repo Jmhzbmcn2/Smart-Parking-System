@@ -13,8 +13,11 @@ import {
   isValidPlate,
   manualPrefill,
   normalizePlate,
+  pendingPaymentId,
   type GateEvent,
+  type Payment,
 } from '@/lib/gate'
+import { formatVnd } from '@/lib/money'
 import { usePolling } from '@/lib/usePolling'
 
 const GATES = ['IN-1', 'OUT-1']
@@ -45,6 +48,12 @@ export default function GatePage() {
   }, [])
 
   const newest = events?.[0]
+  const paymentId = pendingPaymentId(events)
+  const { data: payment } = usePolling<Payment>(
+    paymentId === null ? null : `/payments/${paymentId}`,
+    2000,
+  )
+  const [payMessage, setPayMessage] = useState<string | null>(null)
   const needsManual = newest?.action === 'manual_required'
 
   const prefill = manualPrefill(newest)
@@ -78,6 +87,16 @@ export default function GatePage() {
     }
   }
 
+  async function settle(path: string, body?: unknown) {
+    try {
+      await api(path, { method: 'POST', body: body === undefined ? undefined : JSON.stringify(body) })
+      setPayMessage(null)
+      refresh()
+    } catch (e) {
+      setPayMessage(errorText(e))
+    }
+  }
+
   async function submitOpen(event: FormEvent) {
     event.preventDefault()
     try {
@@ -105,6 +124,36 @@ export default function GatePage() {
         <p role="alert" className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
           LPR is not sure about plate {newest.plate || '(unreadable)'} at {newest.gate_id}. Enter it by hand below.
         </p>
+      )}
+
+      {payment && payment.id === paymentId && payment.status !== 'paid' && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              Payment · {payment.plate} · {payment.gate_id}
+              {payment.status === 'failed' && ' · QR payment failed'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-3xl font-semibold">{formatVnd(payment.amount)}</p>
+            <pre className="rounded-lg bg-muted p-3 font-mono text-sm">{payment.qr_payload}</pre>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => settle(`/payments/${payment.id}/mock`, { success: true })}>
+                Mô phỏng thành công
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => settle(`/payments/${payment.id}/mock`, { success: false })}
+              >
+                Mô phỏng thất bại
+              </Button>
+              <Button variant="secondary" onClick={() => settle(`/payments/${payment.id}/cash`)}>
+                Thu tiền mặt
+              </Button>
+            </div>
+            {payMessage && <p className="text-sm text-destructive">{payMessage}</p>}
+          </CardContent>
+        </Card>
       )}
 
       <div className="grid gap-4 md:grid-cols-2">

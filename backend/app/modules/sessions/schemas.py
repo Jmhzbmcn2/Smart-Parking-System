@@ -35,6 +35,7 @@ class GateEventOut(BaseModel):
     action: str
     session_id: int | None
     barrier_opened_at: datetime | None
+    payment_id: int | None
 
 
 class SessionOut(BaseModel):
@@ -45,3 +46,4 @@ class SessionOut(BaseModel):
     entry_at: datetime
     exit_at: datetime | None
     status: str
+    price_id: int
