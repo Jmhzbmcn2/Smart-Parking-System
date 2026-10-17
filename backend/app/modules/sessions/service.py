@@ -44,7 +44,10 @@ def handle_plate(
     source: str,
     confidence: float | None,
 ) -> GateEvent:
-    """Enter or exit a plate by gate prefix (IN-/OUT-) and open the barrier."""
+    """Enter or exit a plate by gate prefix (IN-/OUT-) and open the barrier.
+
+    Flushes but does not commit, so the caller can add an audit row in the same transaction.
+    """
     plate = normalize_plate(plate)
     if not PLATE_RE.match(plate):
         raise InvalidPlate(plate)
@@ -76,7 +79,7 @@ def handle_plate(
     event.session_id = session.id
     event.barrier_opened_at = clock.now()
     db.add(event)
-    db.commit()
+    db.flush()
     return event
 
 
@@ -97,7 +100,9 @@ def handle_lpr_event(
         db.add(event)
         db.commit()
         return event
-    return handle_plate(db, gate_id, normalized, at, "lpr", confidence)
+    event = handle_plate(db, gate_id, normalized, at, "lpr", confidence)
+    db.commit()
+    return event
 
 
 def list_events(db: Session, limit: int) -> list[GateEvent]:

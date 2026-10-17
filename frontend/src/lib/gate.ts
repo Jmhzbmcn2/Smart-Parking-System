@@ -20,6 +20,12 @@ export function isValidPlate(plate: string): boolean {
   return PLATE_RE.test(normalizePlate(plate))
 }
 
+/** Manual entry form defaults: a `manual_required` event pre-fills its own gate and plate. */
+export function manualPrefill(event: GateEvent | undefined): { gate: string; plate: string } {
+  if (event?.action !== 'manual_required') return { gate: 'IN-1', plate: '' }
+  return { gate: event.gate_id, plate: event.plate ?? '' }
+}
+
 /** The barrier badge shows "open" for 5 s after the newest event opened it. */
 export function barrierOpen(event: { barrier_opened_at: string | null } | undefined, now: number) {
   if (!event?.barrier_opened_at) return false

@@ -17,8 +17,7 @@ def record(
         reason=reason,
         plate=plate,
     )
-    db.add(row)
-    db.commit()
+    db.add(row)  # The caller commits, together with the action being logged.
     return row
 
 

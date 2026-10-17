@@ -70,6 +70,7 @@ def manual_open(
 ) -> AuditLogOut:
     # The barrier is a mock: opening it only leaves the audit row.
     row = audit.record(db, user, "manual_open", body.gate_id, body.reason)
+    db.commit()
     return AuditLogOut.model_validate(row)
 
 
@@ -83,5 +84,7 @@ def manual_entry(
         event = service.handle_plate(db, body.gate_id, body.plate, clock.now(), "manual", None)
     except GATE_ERRORS as exc:
         raise http_error(exc) from exc
+    # IF-02: the entry and its audit row commit together or not at all.
     audit.record(db, user, "manual_entry", body.gate_id, "LPR không chắc chắn", event.plate)
+    db.commit()
     return GateEventOut.model_validate(event)

@@ -7,16 +7,25 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { api, ApiError } from '@/lib/api'
-import { barrierOpen, formatTime, isValidPlate, normalizePlate, type GateEvent } from '@/lib/gate'
+import {
+  barrierOpen,
+  formatTime,
+  isValidPlate,
+  manualPrefill,
+  normalizePlate,
+  type GateEvent,
+} from '@/lib/gate'
 import { usePolling } from '@/lib/usePolling'
 
 const GATES = ['IN-1', 'OUT-1']
 const SELECT_CLASS = 'h-8 rounded-lg border border-input bg-background px-2.5 text-sm'
 
 function GateSelect({ id, value, onChange }: { id: string; value: string; onChange: (v: string) => void }) {
+  // An event from another gate (e.g. IN-2) must stay selectable, not silently fall back to IN-1.
+  const gates = GATES.includes(value) ? GATES : [...GATES, value]
   return (
     <select id={id} className={SELECT_CLASS} value={value} onChange={(e) => onChange(e.target.value)}>
-      {GATES.map((g) => (
+      {gates.map((g) => (
         <option key={g}>{g}</option>
       ))}
     </select>
@@ -38,9 +47,11 @@ export default function GatePage() {
   const newest = events?.[0]
   const needsManual = newest?.action === 'manual_required'
 
-  const [entryGate, setEntryGate] = useState('IN-1')
+  const prefill = manualPrefill(newest)
+  const [gateDraft, setGateDraft] = useState<string | null>(null)
   const [plateDraft, setPlateDraft] = useState<string | null>(null)
-  const plate = plateDraft ?? (needsManual ? (newest?.plate ?? '') : '')
+  const entryGate = gateDraft ?? prefill.gate
+  const plate = plateDraft ?? prefill.plate
   const [entryMessage, setEntryMessage] = useState<string | null>(null)
 
   const [openGate, setOpenGate] = useState('OUT-1')
@@ -58,6 +69,7 @@ export default function GatePage() {
         method: 'POST',
         body: JSON.stringify({ gate_id: entryGate, plate: normalizePlate(plate) }),
       })
+      setGateDraft(null)
       setPlateDraft(null)
       setEntryMessage('Recorded')
       refresh()
@@ -104,7 +116,7 @@ export default function GatePage() {
             <form onSubmit={submitEntry} className="space-y-3">
               <div className="space-y-2">
                 <Label htmlFor="entry-gate">Gate</Label>
-                <GateSelect id="entry-gate" value={entryGate} onChange={setEntryGate} />
+                <GateSelect id="entry-gate" value={entryGate} onChange={setGateDraft} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="plate">Plate</Label>

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { barrierOpen, formatTime, isValidPlate } from './gate'
+import { barrierOpen, formatTime, isValidPlate, manualPrefill, type GateEvent } from './gate'
 
 const NOW = Date.parse('2026-10-19T08:00:10+07:00')
 
@@ -35,5 +35,28 @@ describe('isValidPlate', () => {
 describe('formatTime', () => {
   it('shows UTC+7 wall-clock time', () => {
     expect(formatTime('2026-10-19T01:00:00Z')).toContain('08:00:00')
+  })
+})
+
+describe('manualPrefill', () => {
+  const event = (action: GateEvent['action'], gate_id: string): GateEvent => ({
+    id: 1,
+    gate_id,
+    plate: '30A-123.45',
+    confidence: 0.6,
+    source: 'lpr',
+    received_at: '2026-10-19T08:00:00+07:00',
+    action,
+    session_id: null,
+    barrier_opened_at: null,
+  })
+
+  it('uses the gate and plate of a manual_required event, including an exit gate', () => {
+    expect(manualPrefill(event('manual_required', 'OUT-1'))).toEqual({ gate: 'OUT-1', plate: '30A-123.45' })
+  })
+
+  it('falls back to IN-1 and an empty plate otherwise', () => {
+    expect(manualPrefill(event('entered', 'OUT-1'))).toEqual({ gate: 'IN-1', plate: '' })
+    expect(manualPrefill(undefined)).toEqual({ gate: 'IN-1', plate: '' })
   })
 })
