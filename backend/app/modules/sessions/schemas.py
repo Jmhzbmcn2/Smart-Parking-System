@@ -45,3 +45,4 @@ class SessionOut(BaseModel):
     entry_at: datetime
     exit_at: datetime | None
     status: str
+    price_id: int

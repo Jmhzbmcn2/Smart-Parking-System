@@ -18,6 +18,7 @@ class ParkingSession(Base):
     entry_at: Mapped[datetime] = mapped_column(AwareDateTime)
     exit_at: Mapped[datetime | None] = mapped_column(AwareDateTime, default=None)
     status: Mapped[str] = mapped_column(default="active")  # "active" | "closed"
+    price_id: Mapped[int] = mapped_column(ForeignKey("prices.id"))  # price at entry (TC-11)
 
 
 class GateEvent(Base):

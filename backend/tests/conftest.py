@@ -11,6 +11,7 @@ from app.core import clock
 from app.core.db import Base, get_db
 from app.main import app
 from app.modules.auth.service import seed_users
+from app.modules.billing.service import seed_price
 from app.modules.slots.service import seed_slots
 
 
@@ -38,6 +39,7 @@ def client(engine: Engine) -> Iterator[TestClient]:
     with Session(engine) as session:
         seed_slots(session)
         seed_users(session)
+        seed_price(session)
 
     def override_get_db() -> Iterator[Session]:
         with Session(engine) as session:

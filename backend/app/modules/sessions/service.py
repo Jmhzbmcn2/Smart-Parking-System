@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core import clock
+from app.modules.billing.service import current_price
 from app.modules.sessions.models import GateEvent, ParkingSession
 
 PLATE_RE = re.compile(r"^\d{2}[A-Z][A-Z0-9]?-\d{3}\.?\d{2}$")
@@ -61,7 +62,7 @@ def handle_plate(
     if gate_id.startswith("IN-"):
         if _active_session(db, plate) is not None:
             raise PlateConflict(plate)
-        session = ParkingSession(plate=plate, entry_at=at)
+        session = ParkingSession(plate=plate, entry_at=at, price_id=current_price(db).id)
         db.add(session)
         event.action = "entered"
     else:
