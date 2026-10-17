@@ -48,7 +48,7 @@ uv run --directory backend python mocks/payment.py 1 --fail
 
 `--confidence 0.6` makes the Gate page ask for manual entry. An exit event creates a pending payment; `mocks/payment.py <payment_id>` plays the payment gateway (the Gate page also has buttons for it, and one for cash). The reservation hold is 10 minutes (CR-02). Add `--url http://localhost:PORT` if the backend is not on port 8000.
 
-**After pulling Sprint 2, delete `backend/spms.db`:** the schema changed and there are no migrations yet. The backend recreates and seeds it on the next start.
+**After pulling Sprint 2 or the encryption change (T-04), delete `backend/spms.db`:** the schema changed, existing rows are plaintext, and there are no migrations yet. The backend recreates and seeds it on the next start. Keep `backend/.data_key` (git-ignored) with the database it encrypted, or set `SPMS_DATA_KEY`.
 
 ## Requirements and agent workflow
 

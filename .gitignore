@@ -15,3 +15,5 @@ dist/
 /true (2).xlsx
 
 backend/outbox/
+.data_key
+*.pem

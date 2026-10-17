@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import ForeignKey, Index, text
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.crypto import EncryptedString
 from app.core.db import AwareDateTime, Base
 
 
@@ -15,7 +16,7 @@ class Reservation(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     slot_id: Mapped[str] = mapped_column(ForeignKey("slots.id"))
-    plate: Mapped[str]
+    plate: Mapped[str] = mapped_column(EncryptedString)
     username: Mapped[str]
     created_at: Mapped[datetime] = mapped_column(AwareDateTime)
     expires_at: Mapped[datetime] = mapped_column(AwareDateTime)
