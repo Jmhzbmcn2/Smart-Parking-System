@@ -1,7 +1,7 @@
 # SPMS codebase scaffold — design
 
 Date: 2026-10-17
-Status: draft, waiting for approval
+Status: approved
 
 ## Intent
 

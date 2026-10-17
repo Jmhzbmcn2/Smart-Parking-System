@@ -4,13 +4,13 @@ SPMS (Smart Parking Management System) is a CSE703095 Requirements Engineering c
 
 ## Sources of truth
 
-- [docs/requirements/srs.md](docs/requirements/srs.md): local SRS export; currently **EXPORT PENDING**, with no verified full SRS content.
+- [docs/requirements/srs.md](docs/requirements/srs.md): local SRS export (2026-10-17) with the acceptance criteria; the requirement-tree diagram is not exported.
 - [docs/requirements/SPMS_requirements.xlsx](docs/requirements/SPMS_requirements.xlsx): local requirements register; read `requirements`, `nfrs`, `change_requests`, `test_cases` and `test_case_analysis` for the applicable requirement, criteria and test steps.
 - [docs/requirements/traceability.md](docs/requirements/traceability.md): fixed module/page homes, TC mapping and implementation status.
-- [docs/requirements/implementation-plan.md](docs/requirements/implementation-plan.md): local plan export; currently **EXPORT PENDING**, with no verified full backlog or sprint mapping.
+- [docs/requirements/implementation-plan.md](docs/requirements/implementation-plan.md): local plan export (2026-10-17) with the backlog and sprint mapping; diagrams are not exported.
 - [Scaffold design](docs/superpowers/specs/2026-10-17-spms-codebase-scaffold-design.md): repository structure and cross-cutting conventions, including explicitly known CR-02/T-04 scheduling.
 
-Agents use local files, never depend on claude.ai links. Re-export `srs.md` and `implementation-plan.md` whenever their source documents change. Until exports are available, use only the information in local sources; do not invent missing criteria, backlog or sprint assignments. Approved change requests override older requirement/test text: CR-02 is already in force.
+Agents use local files, never depend on claude.ai links. Re-export `srs.md` and `implementation-plan.md` whenever their source documents change. Use only the information in local sources; do not invent missing criteria, backlog or sprint assignments. Approved change requests override older requirement/test text: CR-02 is already in force.
 
 ## Commands
 
@@ -96,7 +96,7 @@ Create only the files each module needs.
 ## Feature workflow
 
 1. Look up the requirement in `docs/requirements/traceability.md`: module, page and test cases.
-2. Read its acceptance criteria and test steps in the local SRS or workbook `requirements` / `test_cases` sheets, plus applicable approved changes. If required information is absent from the pending exports and local workbook, do not guess it.
+2. Read its acceptance criteria and test steps in the local SRS or workbook `requirements` / `test_cases` sheets, plus applicable approved changes. If required information is absent from the exports and local workbook, do not guess it.
 3. Write tests for its TC first and see them fail for the expected missing behavior.
 4. Implement in the mapped module and page, creating only the files needed.
 5. Run `npm run check` until it passes.
