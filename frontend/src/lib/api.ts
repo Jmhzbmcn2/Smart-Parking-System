@@ -1,3 +1,5 @@
+import { clearSession, getSession } from './auth'
+
 export class ApiError extends Error {
   status: number
 
@@ -15,11 +17,19 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     headers.set('Content-Type', 'application/json')
   }
 
+  const session = getSession()
+  if (session) headers.set('Authorization', `Bearer ${session.token}`)
+
   let response: Response
   try {
     response = await fetch(`/api${path}`, { ...init, headers })
   } catch (error) {
     throw new ApiError(0, error instanceof Error ? error.message : 'Network request failed')
+  }
+
+  if (response.status === 401) {
+    clearSession()
+    window.dispatchEvent(new Event('spms:logout'))
   }
 
   if (!response.ok) {
