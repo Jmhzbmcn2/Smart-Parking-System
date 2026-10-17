@@ -16,10 +16,10 @@ Backend module names mean `backend/app/modules/<name>/`; frontend page names mea
 | SP-2.1 | Hiển thị chỗ trống | Must | Sprint 1 | `slots` | driver | TC-04 | Done |
 | SP-2.2.1 | Giữ chỗ trước | Should | Sprint 2 | `reservations` | driver | TC-05 | Done |
 | SP-2.2.2 | Tự hủy đặt chỗ quá hạn | Should | Sprint 2 | `reservations` | driver | TC-06 | Done |
-| SP-2.3 | Gợi ý slot gần lối vào | Could | Sprint 3 | `slots` | driver | TC-07 | Not started |
+| SP-2.3 | Gợi ý slot gần lối vào | Could | Sprint 3 | `slots` | driver | TC-07 | Done |
 | SP-3.1 | Tính phí gửi xe | Must | Sprint 2 | `billing` | gate, admin | TC-08 | Done |
 | SP-3.2 | Thanh toán QR | Should | Sprint 2 | `billing` | gate, admin | TC-09 | Done |
-| SP-3.3 | Hóa đơn điện tử | Could | Sprint 3 | `billing` | gate, admin | TC-10 | Not started |
+| SP-3.3 | Hóa đơn điện tử | Could | Sprint 3 | `billing` | gate, admin | TC-10 | Done |
 | SP-4.1 | Cấu hình bảng giá | Must | Sprint 2 | `billing` | gate, admin | TC-11 | Done |
 | SP-4.2 | Báo cáo doanh thu ngày | Should | Sprint 2 | `reports` | admin | TC-12 | Done |
 | SP-4.3 | Phân quyền theo vai trò | Must | Sprint 1 | `auth` | login; guards all pages | TC-13 | Done (TC-13 also covers the price page) |
@@ -33,12 +33,12 @@ Backend module names mean `backend/app/modules/<name>/`; frontend page names mea
 |---|---|---|---|
 | NFR-01 | Gate processing p95 <= 3 seconds | TC-17: timing script, outside `npm run check` | TC-17 measured, see docs/testing/tc17-results.md |
 | NFR-02 | LPR accuracy >= 95% on 500 labeled images | TC-18: depends on camera vendor | Not Run |
-| NFR-03 | Monthly uptime >= 99.5% | Analysis | Not started |
-| NFR-04 | 100% personal data encrypted: AES-256 at rest, TLS 1.2+ in transit | Inspection; T-04, Sprint 3: SQLAlchemy column type in `core/` plus HTTPS | Not started |
-| NFR-05 | First-time driver completes reservation in <= 1 minute | Demonstration | Not started |
-| NFR-06 | >= 1000 slots while meeting NFR-01 | Analysis | Not started |
+| NFR-03 | Monthly uptime >= 99.5% | Analysis | Analysis written in report |
+| NFR-04 | 100% personal data encrypted: AES-256 at rest, TLS 1.2+ in transit | Inspection; T-04, Sprint 3: SQLAlchemy column type in `core/` plus HTTPS | Done; inspection in docs/testing/nfr04-inspection.md |
+| NFR-05 | First-time driver completes reservation in <= 1 minute | Demonstration | Kit ready (docs/testing/nfr05-usability.md); sessions pending |
+| NFR-06 | >= 1000 slots while meeting NFR-01 | Analysis | Analysis written in report |
 
-NFR-04 encryption is deferred until T-04; do not add it to the scaffold. TC-17 and TC-18 are mapped to NFR-01 and NFR-02 respectively by `test_case_analysis` (rows 29–30); the functional table preserves that sheet's FR mappings.
+TC-01–TC-17 automated or measured; TC-18 Not Run (vendor). TC-17 and TC-18 are mapped to NFR-01 and NFR-02 respectively by `test_case_analysis` (rows 29–30); the functional table preserves that sheet's FR mappings.
 
 ## Change requests
 
