@@ -16,3 +16,14 @@ class PriceOut(PriceIn):
     id: int
     created_at: datetime
     created_by: str
+
+
+class PaymentOut(BaseModel):
+    id: int
+    session_id: int
+    plate: str
+    gate_id: str
+    amount: int
+    status: str
+    method: str | None
+    qr_payload: str

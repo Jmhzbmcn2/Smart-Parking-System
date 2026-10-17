@@ -27,6 +27,7 @@ _ERRORS = {
     service.PlateConflict: (409, "Plate already has an active session"),
     service.NoActiveSession: (404, "Plate has no active session"),
     service.InvalidPlate: (422, "Invalid plate format"),
+    service.InvalidExitTime: (422, "Exit time is before entry time"),
 }
 GATE_ERRORS = tuple(_ERRORS)
 

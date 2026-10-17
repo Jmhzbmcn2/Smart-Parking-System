@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.core.db import get_db
@@ -8,11 +8,14 @@ from app.modules.audit import service as audit
 from app.modules.auth.models import User
 from app.modules.auth.router import current_user, require_role
 from app.modules.billing import service
-from app.modules.billing.schemas import PriceIn, PriceOut
+from app.modules.billing.models import Payment
+from app.modules.billing.schemas import PaymentOut, PriceIn, PriceOut
+from app.modules.sessions.models import ParkingSession
 
 router = APIRouter(tags=["billing"])
 
 admin_role = require_role("admin")
+staff = Depends(require_role("attendant", "admin"))
 
 
 @router.get("/prices/current", dependencies=[Depends(current_user)])
@@ -40,3 +43,26 @@ def set_price(
     audit.record(db, user, "price_change", "-", reason)
     db.commit()
     return PriceOut.model_validate(price)
+
+
+def payment_out(db: Session, payment: Payment) -> PaymentOut:
+    session = db.get(ParkingSession, payment.session_id)
+    assert session is not None
+    return PaymentOut(
+        id=payment.id,
+        session_id=payment.session_id,
+        plate=session.plate,
+        gate_id=payment.gate_id,
+        amount=payment.amount,
+        status=payment.status,
+        method=payment.method,
+        qr_payload=f"SPMS|{payment.id}|{payment.amount}",
+    )
+
+
+@router.get("/payments/{payment_id}", dependencies=[staff])
+def get_payment(payment_id: int, db: Annotated[Session, Depends(get_db)]) -> PaymentOut:
+    payment = db.get(Payment, payment_id)
+    if payment is None:
+        raise HTTPException(404, "Payment not found")
+    return payment_out(db, payment)

@@ -58,3 +58,69 @@ def test_price_change_is_audited(client, login, frozen_clock):
     assert row["action"] == "price_change"
     assert row["gate_id"] == "-"
     assert "10000" in row["reason"] and "15000" in row["reason"]
+
+
+T_IN = "2026-10-19T08:00:00+07:00"
+T_OUT = "2026-10-19T11:10:00+07:00"  # 3 h 10 min later
+
+
+def exit_gate(client, plate="30A-123.45", timestamp=T_OUT):
+    return post_lpr(client, plate=plate, gate="OUT-1", timestamp=timestamp)
+
+
+def payment_of(client, login, response):
+    payment_id = response.json()["payment_id"]
+    result = client.get(f"/api/payments/{payment_id}", headers=login(client, "attendant"))
+    assert result.status_code == 200
+    return result.json()
+
+
+def test_tc08_fee_3h10m_is_40000(client, login, frozen_clock):
+    post_lpr(client)
+    payment = payment_of(client, login, exit_gate(client))
+    assert payment["amount"] == 40000
+    assert payment["status"] == "pending"
+    assert payment["qr_payload"] == f"SPMS|{payment['id']}|40000"
+    assert payment["plate"] == "30A-123.45"
+
+
+def test_tc11_fee_uses_price_at_entry(client, login, frozen_clock):
+    post_lpr(client, plate="30A-111.11")
+    set_price(client, login(client, "admin"), per_hour=15000)
+    post_lpr(client, plate="30A-222.22")
+    a = payment_of(client, login, exit_gate(client, plate="30A-111.11"))
+    b = payment_of(client, login, exit_gate(client, plate="30A-222.22"))
+    assert (a["amount"], b["amount"]) == (40000, 50000)
+
+
+def test_exit_creates_pending_payment_and_keeps_barrier_closed(client, login, frozen_clock):
+    post_lpr(client)
+    body = exit_gate(client).json()
+    assert body["action"] == "payment_required"
+    assert body["barrier_opened_at"] is None
+    [session] = sessions(client, login)
+    assert session["status"] == "active"
+
+
+def test_repeat_exit_reuses_pending_payment(client, login, frozen_clock):
+    post_lpr(client)
+    first = exit_gate(client).json()["payment_id"]
+    second = exit_gate(client, timestamp="2026-10-19T12:00:00+07:00").json()["payment_id"]
+    assert first == second
+    assert payment_of(client, login, exit_gate(client))["amount"] == 40000
+
+
+def test_exit_before_entry_422(client, login, frozen_clock):
+    post_lpr(client)
+    response = exit_gate(client, timestamp="2026-10-19T07:59:00+07:00")
+    assert response.status_code == 422
+    [session] = sessions(client, login)
+    assert session["exit_at"] is None
+    events = client.get("/api/gate-events", headers=login(client, "attendant")).json()
+    assert [e["action"] for e in events] == ["entered"]
+
+
+def test_payment_requires_staff(client, login):
+    assert client.get("/api/payments/1").status_code == 401
+    assert client.get("/api/payments/1", headers=login(client, "driver")).status_code == 403
+    assert client.get("/api/payments/999", headers=login(client, "attendant")).status_code == 404
