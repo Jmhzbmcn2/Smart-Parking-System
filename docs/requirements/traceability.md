@@ -33,10 +33,10 @@ Backend module names mean `backend/app/modules/<name>/`; frontend page names mea
 |---|---|---|---|
 | NFR-01 | Gate processing p95 <= 3 seconds | TC-17: timing script, outside `npm run check` | TC-17 measured, see docs/testing/tc17-results.md |
 | NFR-02 | LPR accuracy >= 95% on 500 labeled images | TC-18: depends on camera vendor | Not Run |
-| NFR-03 | Monthly uptime >= 99.5% | Analysis | Analysis written in report |
+| NFR-03 | Monthly uptime >= 99.5% | Analysis | Pending (final report) |
 | NFR-04 | 100% personal data encrypted: AES-256 at rest, TLS 1.2+ in transit | Inspection; T-04, Sprint 3: SQLAlchemy column type in `core/` plus HTTPS | Done; inspection in docs/testing/nfr04-inspection.md |
 | NFR-05 | First-time driver completes reservation in <= 1 minute | Demonstration | Kit ready (docs/testing/nfr05-usability.md); sessions pending |
-| NFR-06 | >= 1000 slots while meeting NFR-01 | Analysis | Analysis written in report |
+| NFR-06 | >= 1000 slots while meeting NFR-01 | Analysis | Pending (final report) |
 
 TC-01–TC-17 automated or measured; TC-18 Not Run (vendor). TC-17 and TC-18 are mapped to NFR-01 and NFR-02 respectively by `test_case_analysis` (rows 29–30); the functional table preserves that sheet's FR mappings.
 

@@ -19,6 +19,8 @@ The key comes from the environment variable `SPMS_DATA_KEY` (base64, 64 bytes). 
 | `reservations` | `plate` | Yes | `test_plate_not_stored_in_plaintext` |
 | `audit_log` | `plate` | Yes | `test_plate_not_stored_in_plaintext` |
 | `users` | `username` | Yes | `test_username_encrypted_but_login_works` |
+| `reservations`, `audit_log` | `username` | Yes | `test_username_copies_encrypted` |
+| `prices` | `created_by` (admin username) | Yes | `test_username_copies_encrypted` |
 
 Not encrypted, and why:
 
@@ -26,7 +28,6 @@ Not encrypted, and why:
 |---|---|
 | `users.password_hash` | Already a salted scrypt hash, not reversible. |
 | `users.token` | Random opaque token, not personal data. It is cleared on logout. |
-| `audit_log.username`, `reservations.username` | Not in the Sprint 3 scope. They hold the same demo account names as `users.username`. Encrypt them with `EncryptedString` if real names are stored. |
 | Amounts, timestamps, slot IDs, gate IDs | Not personal data. |
 
 Other checks:

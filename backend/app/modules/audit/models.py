@@ -11,7 +11,7 @@ class AuditLog(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     at: Mapped[datetime] = mapped_column(AwareDateTime)
-    username: Mapped[str]
+    username: Mapped[str] = mapped_column(EncryptedString)
     action: Mapped[str]  # "manual_open" | "manual_entry"
     gate_id: Mapped[str]
     reason: Mapped[str]

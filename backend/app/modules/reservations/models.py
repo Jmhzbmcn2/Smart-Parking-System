@@ -17,7 +17,7 @@ class Reservation(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     slot_id: Mapped[str] = mapped_column(ForeignKey("slots.id"))
     plate: Mapped[str] = mapped_column(EncryptedString)
-    username: Mapped[str]
+    username: Mapped[str] = mapped_column(EncryptedString)
     created_at: Mapped[datetime] = mapped_column(AwareDateTime)
     expires_at: Mapped[datetime] = mapped_column(AwareDateTime)
     status: Mapped[str] = mapped_column(default="active")  # "active" | "expired" | "cancelled"

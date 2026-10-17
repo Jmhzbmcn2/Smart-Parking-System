@@ -43,6 +43,31 @@ def test_username_encrypted_but_login_works(client, login, engine):
     assert login(client, "admin")  # lookup by encrypted username still matches
 
 
+def test_username_copies_encrypted(client, login, engine, frozen_clock):
+    driver = login(client, "driver")
+    client.post(
+        "/api/reservations", json={"slot_id": "T1-A-05", "plate": "30A-222.22"}, headers=driver
+    )
+    assert client.get("/api/reservations/me", headers=driver).status_code == 200
+    attendant = login(client, "attendant")
+    client.post(
+        "/api/gate/manual-entry", json={"gate_id": "IN-1", "plate": "30A-333.33"}, headers=attendant
+    )
+    admin = login(client, "admin")
+    price = {"first_hours": 2, "first_price": 25000, "per_hour": 10000}
+    assert client.post("/api/prices", json=price, headers=admin).status_code == 201
+    for table, column in [
+        ("reservations", "username"),
+        ("audit_log", "username"),
+        ("prices", "created_by"),
+    ]:
+        values = raw(engine, table, column)
+        assert values, table
+        assert not any(name in v for v in values for name in ("admin", "attendant", "driver")), (
+            table
+        )
+
+
 def test_same_plate_same_ciphertext(client, login, engine, frozen_clock):
     post_lpr(client)
     assert post_lpr(client).status_code == 409  # equality lookup and unique index still work
