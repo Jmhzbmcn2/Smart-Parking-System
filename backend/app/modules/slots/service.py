@@ -24,9 +24,20 @@ def set_occupied(db: Session, slot_id: str, occupied: bool) -> Slot:
     slot = db.get(Slot, slot_id)
     if slot is None:
         raise UnknownSlot(slot_id)
-    slot.status = "occupied" if occupied else "available"
+    if occupied:
+        slot.status = "occupied"
+    elif slot.status == "occupied":  # a "free" report never cancels a reservation hold
+        slot.status = "available"
     db.commit()
     return slot
+
+
+def list_slots(db: Session, floor: int | None, zone: str | None, status: str | None) -> list[Slot]:
+    query = select(Slot).order_by(Slot.id)
+    for column, value in ((Slot.floor, floor), (Slot.zone, zone), (Slot.status, status)):
+        if value is not None:
+            query = query.where(column == value)
+    return list(db.scalars(query))
 
 
 def summary(db: Session) -> list[dict[str, int | str]]:

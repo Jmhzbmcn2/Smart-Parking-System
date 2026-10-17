@@ -9,4 +9,6 @@ class Slot(Base):
     id: Mapped[str] = mapped_column(primary_key=True)
     floor: Mapped[int]
     zone: Mapped[str]
-    status: Mapped[str] = mapped_column(default="available")  # "available" | "occupied"
+    status: Mapped[str] = mapped_column(
+        default="available"
+    )  # "available" | "occupied" | "reserved"

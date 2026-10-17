@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class SensorEvent(BaseModel):
@@ -16,3 +16,12 @@ class FloorZoneSummary(BaseModel):
     zone: str
     free: int
     total: int
+
+
+class SlotOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: str
+    floor: int
+    zone: str
+    status: str

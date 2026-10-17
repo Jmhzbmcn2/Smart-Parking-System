@@ -30,7 +30,9 @@ class GateEvent(Base):
     confidence: Mapped[float | None]
     source: Mapped[str]  # "lpr" | "manual" | "payment"
     received_at: Mapped[datetime] = mapped_column(AwareDateTime)
-    action: Mapped[str]  # "entered" | "exited" | "manual_required" | "payment_required" | "payment_failed"
+    action: Mapped[
+        str
+    ]  # "entered" | "exited" | "manual_required" | "payment_required" | "payment_failed"
     session_id: Mapped[int | None] = mapped_column(ForeignKey("parking_sessions.id"), default=None)
     barrier_opened_at: Mapped[datetime | None] = mapped_column(AwareDateTime, default=None)
     payment_id: Mapped[int | None] = mapped_column(ForeignKey("payments.id"), default=None)
