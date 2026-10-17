@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core import clock
@@ -69,7 +70,11 @@ def reserve(db: Session, username: str, slot_id: str, plate: str) -> Reservation
     )
     slot.status = "reserved"
     db.add(reservation)
-    db.commit()
+    try:
+        db.commit()
+    except IntegrityError as exc:  # a concurrent request took the slot first
+        db.rollback()
+        raise SlotNotAvailable(slot_id) from exc
     return reservation
 
 
