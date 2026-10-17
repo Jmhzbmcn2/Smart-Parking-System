@@ -7,9 +7,27 @@ export type GateEvent = {
   confidence: number | null
   source: string
   received_at: string
-  action: 'entered' | 'exited' | 'manual_required'
+  action: 'entered' | 'exited' | 'manual_required' | 'payment_required' | 'payment_failed'
   session_id: number | null
   barrier_opened_at: string | null
+  payment_id: number | null
+}
+
+export type Payment = {
+  id: number
+  session_id: number
+  plate: string
+  gate_id: string
+  amount: number
+  status: 'pending' | 'paid' | 'failed'
+  method: 'qr' | 'cash' | null
+  qr_payload: string
+}
+
+/** The id of the payment the newest event is waiting on, if any. */
+export function pendingPaymentId(event: GateEvent | undefined): number | null {
+  const waiting = event?.action === 'payment_required' || event?.action === 'payment_failed'
+  return waiting ? (event.payment_id ?? null) : null
 }
 
 export function normalizePlate(plate: string): string {
